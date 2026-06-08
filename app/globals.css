@@ -78,6 +78,8 @@ tr.done .title { text-decoration: line-through; }
 .empty { padding: 40px; text-align: center; color: var(--lo); }
 .note { color: var(--lo); font-size: 12px; margin-top: 16px; }
 
+.crumb { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.crumb h2 { font-size: 18px; font-weight: 700; }
 .bar { margin-top: 10px; height: 6px; background: var(--surf2); border-radius: 4px; overflow: hidden; }
 .bar span { display: block; height: 100%; background: var(--sage); }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
