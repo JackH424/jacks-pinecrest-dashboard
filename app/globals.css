@@ -86,6 +86,17 @@ tr.done .title { text-decoration: line-through; }
 .who { background: var(--sage-soft); color: var(--sage); border: 1px solid #d7e2cd; border-radius: 14px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
 .who:hover { background: #e3ecd9; }
 
+/* Task cards */
+.tasklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.tcard { background: var(--surf); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: border-color .12s, box-shadow .12s; }
+.tcard:hover { border-color: #cdd3cb; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.tcard.done { opacity: .55; }
+.tcard.done .tcard-title { text-decoration: line-through; }
+.tcard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tcard-title { font-weight: 600; font-size: 14px; line-height: 1.4; }
+.tcard-foot { color: var(--lo); font-size: 12px; margin-top: 2px; }
+.proj-pick { border: none; background: var(--surf2); color: var(--lo); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 60%; }
+
 @media (max-width: 700px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .title { max-width: 220px; }
