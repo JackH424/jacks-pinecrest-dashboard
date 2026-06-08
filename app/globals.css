@@ -96,6 +96,32 @@ tr.done .title { text-decoration: line-through; }
 .tcard-title { font-weight: 600; font-size: 14px; line-height: 1.4; }
 .tcard-foot { color: var(--lo); font-size: 12px; margin-top: 2px; }
 .proj-pick { border: none; background: var(--surf2); color: var(--lo); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 60%; }
+.linkbtn { background: none; border: none; color: var(--sage); cursor: pointer; font-size: 12px; padding: 0; }
+.mention { color: var(--sage); }
+
+/* Threads & comments */
+.thread { margin-top: 26px; }
+.thread h3 { font-size: 15px; margin-bottom: 10px; }
+.threadbox { background: var(--surf); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.comments { display: flex; flex-direction: column; gap: 12px; max-height: 360px; overflow-y: auto; margin-bottom: 12px; }
+.comment .c-h { font-size: 12px; color: var(--lo); margin-bottom: 2px; }
+.comment .c-b { font-size: 13px; white-space: pre-wrap; }
+.composer { display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea { flex: 1; min-height: 54px; resize: vertical; background: var(--surf); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; color: var(--hi); }
+.composer .post { background: var(--sage); color: #fff; border: none; border-radius: 8px; padding: 9px 16px; cursor: pointer; font-weight: 600; }
+.composer .post:disabled { opacity: .5; cursor: default; }
+
+/* Messages view */
+.msglist { display: flex; flex-direction: column; gap: 10px; }
+.msg { background: var(--surf); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.msg-h { font-size: 12px; color: var(--lo); margin-bottom: 4px; }
+.msg-b { font-size: 13px; white-space: pre-wrap; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(20,24,28,.45); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; z-index: 50; }
+.modal { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 620px; max-height: 86vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
+.modal-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
 
 @media (max-width: 700px) {
   .stats { grid-template-columns: repeat(2, 1fr); }

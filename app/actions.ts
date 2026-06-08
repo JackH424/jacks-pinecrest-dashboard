@@ -33,3 +33,20 @@ export async function moveTask(taskId: string, projectId: string) {
   revalidatePath("/");
   return { ok: true };
 }
+
+export async function addComment(
+  targetType: "task" | "project", targetId: string, author: string, body: string
+) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const text = (body || "").trim();
+  if (!text) return { ok: false, error: "empty" };
+  const mentions = Array.from(
+    new Set((text.match(/@([A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)?)/g) || []).map((m) => m.slice(1)))
+  );
+  const id = "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  await sql`INSERT INTO comments (id,target_type,target_id,author,body,mentions)
+    VALUES (${id}, ${targetType}, ${targetId}, ${author}, ${text}, ${JSON.stringify(mentions)}::json)`;
+  revalidatePath("/");
+  return { ok: true, id, mentions };
+}

@@ -4,8 +4,14 @@ import seedPeople from "@/data/seed_people.json";
 import seedMembers from "@/data/seed_project_members.json";
 import seedTasks from "@/data/seed_tasks.json";
 import seedAssignees from "@/data/seed_task_assignees.json";
+import seedComments from "@/data/seed_comments.json";
 
 export const PRIMARY_USER = "Jack Harris";
+
+export type Comment = {
+  id: string; target_type: string; target_id: string;
+  author: string; body: string; created_at: string; mentions: string[];
+};
 
 export type Project = {
   id: string; name: string; status: string; priority: number;
@@ -17,7 +23,7 @@ export type Task = {
   priority: string; due: string; source_type: string; source_title: string;
   source_date: string; source_url: string; assignees: string[];
 };
-export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[] };
+export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[] };
 
 let ready = false;
 
@@ -32,6 +38,20 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
     source_type text DEFAULT 'manual', source_title text DEFAULT '', source_date text DEFAULT '', source_url text DEFAULT '',
     updated_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS task_assignees (task_id text, person_id text, PRIMARY KEY (task_id, person_id))`;
+  await sql`CREATE TABLE IF NOT EXISTS comments (
+    id text PRIMARY KEY, target_type text NOT NULL, target_id text NOT NULL,
+    author text NOT NULL DEFAULT 'Unknown', body text NOT NULL DEFAULT '',
+    created_at timestamptz DEFAULT now(), mentions json DEFAULT '[]'::json)`;
+
+  const cc = (await sql`SELECT count(*)::int AS n FROM comments`) as { n: number }[];
+  if (cc[0]?.n === 0) {
+    await sql`INSERT INTO comments (id,target_type,target_id,author,body,created_at,mentions)
+      SELECT id,target_type,target_id,author,body,
+             NULLIF(created_at,'')::timestamptz, mentions
+      FROM json_to_recordset(${JSON.stringify(seedComments)}::json) AS x(
+        id text, target_type text, target_id text, author text, body text, created_at text, mentions json)
+      ON CONFLICT (id) DO NOTHING`;
+  }
 
   const n = (await sql`SELECT count(*)::int AS n FROM projects`) as { n: number }[];
   if (n[0]?.n === 0) {
@@ -66,7 +86,7 @@ function fallback(): Workspace {
   const people = (seedPeople as { id: string; name: string }[]).map((p) => ({
     ...p, open: tasks.filter((t) => t.assignees.includes(p.name) && t.status !== "done").length,
   }));
-  return { projects, people, tasks };
+  return { projects, people, tasks, comments: seedComments as Comment[] };
 }
 
 export async function getWorkspace(): Promise<Workspace> {
@@ -90,7 +110,11 @@ export async function getWorkspace(): Promise<Workspace> {
       SELECT pe.id, pe.name, count(*) FILTER (WHERE t.status<>'done')::int AS open
       FROM people pe LEFT JOIN task_assignees ta ON ta.person_id=pe.id LEFT JOIN tasks2 t ON t.id=ta.task_id
       GROUP BY pe.id ORDER BY open DESC`) as Person[];
-    return { projects, people, tasks };
+    const comments = (await sql`
+      SELECT id,target_type,target_id,author,body,
+             COALESCE(to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS'),'') AS created_at, mentions
+      FROM comments ORDER BY created_at ASC`) as Comment[];
+    return { projects, people, tasks, comments };
   } catch (err) {
     console.error("DB read failed, using seed fallback:", err);
     return fallback();
