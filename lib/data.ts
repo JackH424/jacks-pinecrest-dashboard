@@ -43,18 +43,13 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
     author text NOT NULL DEFAULT 'Unknown', body text NOT NULL DEFAULT '',
     created_at timestamptz DEFAULT now(), mentions json DEFAULT '[]'::json)`;
 
-  const cc = (await sql`SELECT count(*)::int AS n FROM comments`) as { n: number }[];
-  if (cc[0]?.n === 0) {
-    await sql`INSERT INTO comments (id,target_type,target_id,author,body,created_at,mentions)
-      SELECT id,target_type,target_id,author,body,
-             NULLIF(created_at,'')::timestamptz, mentions
-      FROM json_to_recordset(${JSON.stringify(seedComments)}::json) AS x(
-        id text, target_type text, target_id text, author text, body text, created_at text, mentions json)
-      ON CONFLICT (id) DO NOTHING`;
-  }
+  await sql`CREATE TABLE IF NOT EXISTS _meta (key text PRIMARY KEY, val text)`;
 
-  const n = (await sql`SELECT count(*)::int AS n FROM projects`) as { n: number }[];
-  if (n[0]?.n === 0) {
+  // seed_v3: reset to the clean Monday-only model (projects + subtasks +
+  // one-offs + threaded comments). Runs once; replaces the earlier KB seed.
+  const v = (await sql`SELECT 1 FROM _meta WHERE key = 'seed_v3'`) as unknown[];
+  if (v.length === 0) {
+    await sql`TRUNCATE projects, people, project_members, tasks2, task_assignees, comments`;
     await sql`INSERT INTO people (id,name) SELECT id,name FROM json_to_recordset(${JSON.stringify(seedPeople)}::json) AS x(id text, name text) ON CONFLICT (id) DO NOTHING`;
     await sql`INSERT INTO projects (id,name,status,priority,position) SELECT id,name,status,priority,position FROM json_to_recordset(${JSON.stringify(seedProjects)}::json) AS x(id text, name text, status text, priority int, position int) ON CONFLICT (id) DO NOTHING`;
     await sql`INSERT INTO project_members (project_id,person_id) SELECT project_id,person_id FROM json_to_recordset(${JSON.stringify(seedMembers)}::json) AS x(project_id text, person_id text) ON CONFLICT DO NOTHING`;
@@ -64,6 +59,12 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
         id text, project_id text, title text, status text, priority text, due text,
         source_type text, source_title text, source_date text, source_url text) ON CONFLICT (id) DO NOTHING`;
     await sql`INSERT INTO task_assignees (task_id,person_id) SELECT task_id,person_id FROM json_to_recordset(${JSON.stringify(seedAssignees)}::json) AS x(task_id text, person_id text) ON CONFLICT DO NOTHING`;
+    await sql`INSERT INTO comments (id,target_type,target_id,author,body,created_at,mentions)
+      SELECT id,target_type,target_id,author,body, NULLIF(created_at,'')::timestamptz, mentions
+      FROM json_to_recordset(${JSON.stringify(seedComments)}::json) AS x(
+        id text, target_type text, target_id text, author text, body text, created_at text, mentions json)
+      ON CONFLICT (id) DO NOTHING`;
+    await sql`INSERT INTO _meta (key,val) VALUES ('seed_v3','1') ON CONFLICT (key) DO NOTHING`;
   }
   ready = true;
 }

@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
-import { setStatus, toggleAssignee, moveTask, addComment } from "./actions";
+import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask } from "./actions";
 
 type View = "projects" | "tasks" | "people" | "messages";
 type SF = "open" | "all" | "done";
@@ -27,6 +28,10 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [q, setQ] = useState("");
   const [sf, setSf] = useState<SF>("open");
   const [assignee, setAssignee] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [ntTitle, setNtTitle] = useState("");
+  const [ntProj, setNtProj] = useState(ONEOFF_ID);
+  const [ntWho, setNtWho] = useState("");
 
   const idByName = useMemo(() => new Map(data.people.map((p) => [p.name, p.id])), [data.people]);
   const projName = useMemo(() => new Map(data.projects.map((p) => [p.id, p.name])), [data.projects]);
@@ -63,7 +68,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   }, [tasks, selProj, selPerson, assignee, sf, q]);
 
   function patch(id: string, fn: (t: Task) => Task) { setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
-  function cycle(t: Task) { const next = t.status === "todo" ? "doing" : t.status === "doing" ? "done" : "todo"; patch(t.id, (x) => ({ ...x, status: next })); if (persists) start(() => { setStatus(t.id, next); }); }
+  function changeStatus(t: Task, status: string) { patch(t.id, (x) => ({ ...x, status })); if (persists) start(() => { setStatus(t.id, status); }); }
   function addA(t: Task, name: string) { if (!name || t.assignees.includes(name)) return; const pid = idByName.get(name); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: [...x.assignees, name].sort() })); if (persists) start(() => { toggleAssignee(t.id, pid, true); }); }
   function rmA(t: Task, name: string) { const pid = idByName.get(name); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: x.assignees.filter((a) => a !== name) })); if (persists) start(() => { toggleAssignee(t.id, pid, false); }); }
   function move(t: Task, pid: string) { patch(t.id, (x) => ({ ...x, project_id: pid })); if (persists) start(() => { moveTask(t.id, pid); }); }
@@ -73,7 +78,16 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     setComments((cs) => [...cs, c]);
     if (persists) start(() => { addComment(type, id, primaryUser, text); });
   }
-  function switchView(v: View) { setView(v); setSelProj(null); setSelPerson(null); setAssignee(""); }
+  function createTask() {
+    const title = ntTitle.trim(); if (!title) return;
+    const proj = selProj || ntProj || ONEOFF_ID;
+    const id = "tmp" + Math.random().toString(36).slice(2);
+    const who = ntWho ? [ntWho] : [];
+    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", assignees: who }, ...ts]);
+    if (persists) start(() => { addTask(title, proj, ntWho ? [idByName.get(ntWho) || ""] : []); });
+    setNtTitle(""); setNtWho(""); setAdding(false);
+  }
+  function switchView(v: View) { setView(v); setSelProj(null); setSelPerson(null); setAssignee(""); setAdding(false); }
 
   const showingCards = (view === "projects" && !selProj) || (view === "people" && !selPerson);
   const heading = selProj ? projName.get(selProj) : selPerson;
@@ -149,19 +163,38 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             )}
             <span className="spacer" />
             <input placeholder="Search tasks…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <button className="newbtn" onClick={() => setAdding((a) => !a)}>+ New task</button>
           </div>
+          {adding && (
+            <div className="newform">
+              <input autoFocus placeholder="Task title…" value={ntTitle} onChange={(e) => setNtTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") createTask(); }} />
+              {!selProj && (
+                <select className="streamsel" value={ntProj} onChange={(e) => setNtProj(e.target.value)}>
+                  <option value={ONEOFF_ID}>One-off (no project)</option>
+                  {data.projects.filter((p) => p.id !== ONEOFF_ID).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              )}
+              <select className="streamsel" value={ntWho} onChange={(e) => setNtWho(e.target.value)}>
+                <option value="">Unassigned</option>
+                {TEAM.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <button className="post" onClick={createTask} disabled={!ntTitle.trim()}>Add</button>
+            </div>
+          )}
 
           {rows.length === 0 ? <div className="empty">No tasks match.</div> : (
             <div className="tasklist">
               {rows.slice(0, 300).map((t) => (
                 <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""}`}>
                   <div className="tcard-top">
-                    <span className={`badge ${t.status}`} onClick={() => cycle(t)}>{t.status}</span>
+                    <select className={`stk stk-${t.status}`} value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
+                      {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
                     <select className="proj-pick" value={t.project_id} onChange={(e) => move(t, e.target.value)}>
                       {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </div>
-                  <div className="tcard-title">{t.title}</div>
+                  <div className="tcard-title">{t.project_id === ONEOFF_ID && <span className="oneoff-tag">one-off</span>}{t.title}</div>
                   <div className="chips">
                     {t.assignees.map((a) => <span key={a} className="who" onClick={() => rmA(t, a)} title="remove">{a} ×</span>)}
                     <select className="streamsel" value="" onChange={(e) => { addA(t, e.target.value); e.currentTarget.value = ""; }}>
@@ -195,7 +228,9 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-h">
               <div>
-                <span className={`badge ${openTask.status}`} onClick={() => cycle(openTask)}>{openTask.status}</span>
+                <select className={`stk stk-${openTask.status}`} value={openTask.status} onChange={(e) => changeStatus(openTask, e.target.value)}>
+                  {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
                 <span className="src" style={{ marginLeft: 8 }}>{projName.get(openTask.project_id)}</span>
               </div>
               <button className="clear" onClick={() => setOpenTaskId(null)}>✕</button>

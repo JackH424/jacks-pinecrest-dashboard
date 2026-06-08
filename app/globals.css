@@ -97,6 +97,18 @@ tr.done .title { text-decoration: line-through; }
 .tcard-foot { color: var(--lo); font-size: 12px; margin-top: 2px; }
 .proj-pick { border: none; background: var(--surf2); color: var(--lo); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 60%; }
 .linkbtn { background: none; border: none; color: var(--sage); cursor: pointer; font-size: 12px; padding: 0; }
+
+/* Status stickers (dropdown) */
+.stk { border: 1px solid; border-radius: 14px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; appearance: none; -webkit-appearance: none; }
+.stk-todo { color: #4b5563; background: #eef0f2; border-color: #d8dce1; }
+.stk-in_progress { color: #1f5a93; background: #e7f0fa; border-color: #cfe0f2; }
+.stk-waiting { color: #8a6212; background: #faf2e0; border-color: #ecdcb6; }
+.stk-blocked { color: #97331f; background: #fbe7e2; border-color: #f1cabf; }
+.stk-done { color: #1f6b40; background: #e6f3ea; border-color: #c7e3d1; }
+.oneoff-tag { display: inline-block; background: #efe9f7; color: #6b3fa0; border: 1px solid #ddd0ee; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
+.newbtn { background: var(--sage); color: #fff; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.newform { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.newform input { flex: 1; min-width: 260px; background: var(--surf); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--hi); }
 .mention { color: var(--sage); }
 
 /* Threads & comments */

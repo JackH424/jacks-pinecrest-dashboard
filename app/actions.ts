@@ -1,9 +1,10 @@
 "use server";
 
 import { getSql } from "@/lib/db";
+import { STATUS_IDS } from "@/lib/statuses";
 import { revalidatePath } from "next/cache";
 
-const STATUSES = new Set(["todo", "doing", "done"]);
+const STATUSES = new Set(STATUS_IDS);
 
 export async function setStatus(taskId: string, status: string) {
   if (!STATUSES.has(status)) return { ok: false };
@@ -12,6 +13,21 @@ export async function setStatus(taskId: string, status: string) {
   await sql`UPDATE tasks2 SET status = ${status}, updated_at = now() WHERE id = ${taskId}`;
   revalidatePath("/");
   return { ok: true };
+}
+
+export async function addTask(title: string, projectId: string, assigneeIds: string[]) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const t = (title || "").trim();
+  if (!t) return { ok: false, error: "empty" };
+  const id = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  await sql`INSERT INTO tasks2 (id, project_id, title, status, priority, source_type)
+    VALUES (${id}, ${projectId || "oneoff"}, ${t}, 'todo', 'normal', 'manual')`;
+  for (const pid of assigneeIds || []) {
+    if (pid) await sql`INSERT INTO task_assignees (task_id, person_id) VALUES (${id}, ${pid}) ON CONFLICT DO NOTHING`;
+  }
+  revalidatePath("/");
+  return { ok: true, id };
 }
 
 export async function toggleAssignee(taskId: string, personId: string, on: boolean) {
