@@ -78,6 +78,12 @@ tr.done .title { text-decoration: line-through; }
 .empty { padding: 40px; text-align: center; color: var(--lo); }
 .note { color: var(--lo); font-size: 12px; margin-top: 16px; }
 
+.bar { margin-top: 10px; height: 6px; background: var(--surf2); border-radius: 4px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--sage); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.who { background: var(--sage-soft); color: var(--sage); border: 1px solid #d7e2cd; border-radius: 14px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+.who:hover { background: #e3ecd9; }
+
 @media (max-width: 700px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .title { max-width: 220px; }

@@ -1,35 +1,33 @@
-import { getTasks, PRIMARY_USER } from "@/lib/tasks";
+import { getWorkspace, PRIMARY_USER } from "@/lib/data";
 import { dbConnected } from "@/lib/db";
-import Home from "./Home";
+import Workspace from "./Workspace";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const tasks = await getTasks();
-  const mine = tasks.filter((t) => t.assignee === PRIMARY_USER).length;
-  const open = tasks.filter((t) => t.status !== "done").length;
-  const assignees = new Set(
-    tasks.map((t) => t.assignee).filter((a) => a && a !== "Unassigned")
-  ).size;
+  const data = await getWorkspace();
+  const openTasks = data.tasks.filter((t) => t.status !== "done").length;
 
   return (
     <div className="wrap">
       <header className="top">
         <h1>Pinecrest Mission Control</h1>
-        <span className="sub">tasks &amp; follow-ups from meetings</span>
+        <span className="sub">projects, tasks &amp; people</span>
       </header>
 
       <div className="stats">
-        <div className="stat"><div className="n">{tasks.length}</div><div className="l">Total tasks</div></div>
-        <div className="stat"><div className="n">{open}</div><div className="l">Open</div></div>
-        <div className="stat"><div className="n">{mine}</div><div className="l">Assigned to me</div></div>
-        <div className="stat"><div className="n">{assignees}</div><div className="l">People</div></div>
+        <div className="stat"><div className="n">{data.projects.length}</div><div className="l">Projects</div></div>
+        <div className="stat"><div className="n">{data.tasks.length}</div><div className="l">Tasks</div></div>
+        <div className="stat"><div className="n">{openTasks}</div><div className="l">Open</div></div>
+        <div className="stat"><div className="n">{data.people.length}</div><div className="l">People</div></div>
       </div>
 
-      <Home tasks={tasks} primaryUser={PRIMARY_USER} persists={dbConnected()} />
+      <Workspace data={data} primaryUser={PRIMARY_USER} persists={dbConnected()} />
 
       <p className="note">
         {dbConnected()
-          ? `Connected to database — status changes save. ${tasks.length} tasks seeded from meetings.`
-          : `Preview mode — connect Neon (Phase A2) so status changes persist. ${tasks.length} tasks seeded from meetings.`}
+          ? "Connected — projects from Monday, tasks from meetings, assignees editable."
+          : "Preview mode — connect the database for editing to persist."}
       </p>
     </div>
   );
