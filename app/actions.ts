@@ -21,3 +21,11 @@ export async function reassign(id: string, assignee: string) {
   revalidatePath("/");
   return { ok: true };
 }
+
+export async function setStream(id: string, stream: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database connected yet" };
+  await sql`UPDATE tasks SET stream = ${stream || "General"}, updated_at = now() WHERE id = ${id}`;
+  revalidatePath("/");
+  return { ok: true };
+}

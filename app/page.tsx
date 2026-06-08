@@ -1,8 +1,8 @@
 import { getTasks, PRIMARY_USER } from "@/lib/tasks";
 import { dbConnected } from "@/lib/db";
-import TaskBoard from "./TaskBoard";
+import Home from "./Home";
 
-export default async function Home() {
+export default async function Page() {
   const tasks = await getTasks();
   const mine = tasks.filter((t) => t.assignee === PRIMARY_USER).length;
   const open = tasks.filter((t) => t.status !== "done").length;
@@ -24,7 +24,7 @@ export default async function Home() {
         <div className="stat"><div className="n">{assignees}</div><div className="l">People</div></div>
       </div>
 
-      <TaskBoard tasks={tasks} primaryUser={PRIMARY_USER} persists={dbConnected()} />
+      <Home tasks={tasks} primaryUser={PRIMARY_USER} persists={dbConnected()} />
 
       <p className="note">
         {dbConnected()
