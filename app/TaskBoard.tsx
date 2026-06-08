@@ -1,17 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Task } from "@/lib/tasks";
+import { setStatus } from "./actions";
 
 type Tab = "all" | "mine" | "followups";
 
 export default function TaskBoard({
   tasks,
   primaryUser,
+  persists,
 }: {
   tasks: Task[];
   primaryUser: string;
+  persists: boolean;
 }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [tab, setTab] = useState<Tab>("mine");
   const [q, setQ] = useState("");
   const [assignee, setAssignee] = useState("");
@@ -44,7 +50,13 @@ export default function TaskBoard({
   function cycle(id: string, cur: Task["status"]) {
     const next: Task["status"] =
       cur === "todo" ? "doing" : cur === "doing" ? "done" : "todo";
-    setOverrides((o) => ({ ...o, [id]: next }));
+    setOverrides((o) => ({ ...o, [id]: next })); // optimistic
+    if (persists) {
+      startTransition(async () => {
+        await setStatus(id, next);
+        router.refresh();
+      });
+    }
   }
 
   return (

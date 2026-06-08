@@ -1,8 +1,9 @@
 import { getTasks, PRIMARY_USER } from "@/lib/tasks";
+import { dbConnected } from "@/lib/db";
 import TaskBoard from "./TaskBoard";
 
-export default function Home() {
-  const tasks = getTasks();
+export default async function Home() {
+  const tasks = await getTasks();
   const mine = tasks.filter((t) => t.assignee === PRIMARY_USER).length;
   const open = tasks.filter((t) => t.status !== "done").length;
   const assignees = new Set(
@@ -23,11 +24,12 @@ export default function Home() {
         <div className="stat"><div className="n">{assignees}</div><div className="l">People</div></div>
       </div>
 
-      <TaskBoard tasks={tasks} primaryUser={PRIMARY_USER} />
+      <TaskBoard tasks={tasks} primaryUser={PRIMARY_USER} persists={dbConnected()} />
 
       <p className="note">
-        A1 preview — tasks are seeded from {tasks.length} meeting action items.
-        Status changes here are local only until the database is added (Phase A2).
+        {dbConnected()
+          ? `Connected to database — status changes save. ${tasks.length} tasks seeded from meetings.`
+          : `Preview mode — connect Neon (Phase A2) so status changes persist. ${tasks.length} tasks seeded from meetings.`}
       </p>
     </div>
   );
