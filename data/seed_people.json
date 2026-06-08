@@ -1,5 +1,9 @@
 [
  {
+  "id": "jack-harris",
+  "name": "Jack Harris"
+ },
+ {
   "id": "rivka-simon",
   "name": "Rivka Simon"
  },
@@ -12,10 +16,6 @@
   "name": "Lior Goldstein"
  },
  {
-  "id": "jack-harris",
-  "name": "Jack Harris"
- },
- {
   "id": "aharon-heiman",
   "name": "Aharon Heiman"
  },
@@ -24,12 +24,12 @@
   "name": "Declan McGettigan"
  },
  {
-  "id": "cory-waldron",
-  "name": "Cory Waldron"
- },
- {
   "id": "jalen-fields",
   "name": "Jalen Fields"
+ },
+ {
+  "id": "cory-waldron",
+  "name": "Cory Waldron"
  },
  {
   "id": "kayla-epstein",
@@ -40,12 +40,12 @@
   "name": "Josh Parrish"
  },
  {
-  "id": "michael-lang",
-  "name": "Michael Lang"
- },
- {
   "id": "david-azose",
   "name": "David Azose"
+ },
+ {
+  "id": "michael-lang",
+  "name": "Michael Lang"
  },
  {
   "id": "casey-hickey",

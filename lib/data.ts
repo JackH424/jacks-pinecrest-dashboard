@@ -45,9 +45,9 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
 
   await sql`CREATE TABLE IF NOT EXISTS _meta (key text PRIMARY KEY, val text)`;
 
-  // seed_v3: reset to the clean Monday-only model (projects + subtasks +
+  // seed_v4: reset to the clean Monday-only model (projects + subtasks +
   // one-offs + threaded comments). Runs once; replaces the earlier KB seed.
-  const v = (await sql`SELECT 1 FROM _meta WHERE key = 'seed_v3'`) as unknown[];
+  const v = (await sql`SELECT 1 FROM _meta WHERE key = 'seed_v4'`) as unknown[];
   if (v.length === 0) {
     await sql`TRUNCATE projects, people, project_members, tasks2, task_assignees, comments`;
     await sql`INSERT INTO people (id,name) SELECT id,name FROM json_to_recordset(${JSON.stringify(seedPeople)}::json) AS x(id text, name text) ON CONFLICT (id) DO NOTHING`;
@@ -64,7 +64,7 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
       FROM json_to_recordset(${JSON.stringify(seedComments)}::json) AS x(
         id text, target_type text, target_id text, author text, body text, created_at text, mentions json)
       ON CONFLICT (id) DO NOTHING`;
-    await sql`INSERT INTO _meta (key,val) VALUES ('seed_v3','1') ON CONFLICT (key) DO NOTHING`;
+    await sql`INSERT INTO _meta (key,val) VALUES ('seed_v4','1') ON CONFLICT (key) DO NOTHING`;
   }
   ready = true;
 }

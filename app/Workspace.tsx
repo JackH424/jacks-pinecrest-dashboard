@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle } from "./actions";
 
 type View = "projects" | "tasks" | "people" | "messages";
 type SF = "open" | "all" | "done";
@@ -33,8 +33,10 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [ntProj, setNtProj] = useState(ONEOFF_ID);
   const [ntWho, setNtWho] = useState("");
 
+  const [projOverride, setProjOverride] = useState<Record<string, string>>({});
   const idByName = useMemo(() => new Map(data.people.map((p) => [p.name, p.id])), [data.people]);
-  const projName = useMemo(() => new Map(data.projects.map((p) => [p.id, p.name])), [data.projects]);
+  const baseProjName = useMemo(() => new Map(data.projects.map((p) => [p.id, p.name])), [data.projects]);
+  const projName = (id: string) => projOverride[id] ?? baseProjName.get(id) ?? id;
   const projStats = useMemo(() => {
     const m = new Map<string, { total: number; open: number }>();
     tasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); });
@@ -87,10 +89,18 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     if (persists) start(() => { addTask(title, proj, ntWho ? [idByName.get(ntWho) || ""] : []); });
     setNtTitle(""); setNtWho(""); setAdding(false);
   }
+  function renameProj(id: string, name: string) {
+    const n = name.trim(); if (!n) return;
+    setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); });
+  }
+  function retitle(t: Task, title: string) {
+    const n = title.trim(); if (!n) return;
+    patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); });
+  }
   function switchView(v: View) { setView(v); setSelProj(null); setSelPerson(null); setAssignee(""); setAdding(false); }
 
   const showingCards = (view === "projects" && !selProj) || (view === "people" && !selPerson);
-  const heading = selProj ? projName.get(selProj) : selPerson;
+  const heading = selProj ? projName(selProj) : selPerson;
   const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) : null;
 
   return (
@@ -107,7 +117,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           {myMessages.length === 0 ? <div className="empty">No messages mention you yet.</div> :
             myMessages.map((c) => (
               <div key={c.id} className="msg">
-                <div className="msg-h"><b>{c.author}</b> in <span className="src">{projName.get(c.target_id) || c.target_id}</span> · {c.created_at?.replace("T", " ")}</div>
+                <div className="msg-h"><b>{c.author}</b> in <span className="src">{projName(c.target_id) || c.target_id}</span> · {c.created_at?.replace("T", " ")}</div>
                 <div className="msg-b"><Body text={c.body} /></div>
               </div>
             ))}
@@ -143,10 +153,18 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
 
       {view !== "messages" && !showingCards && (
         <>
-          {heading && (
-            <div className="crumb">
-              <button className="clear" onClick={() => { setSelProj(null); setSelPerson(null); }}>← Back to {view === "projects" ? "projects" : "people"}</button>
-              <h2>{heading}</h2>
+          {selProj && (
+            <div className="phead">
+              <button className="clear" onClick={() => setSelProj(null)}>← All projects</button>
+              <div className="plabel">PROJECT</div>
+              <Editable className="ptitle" value={projName(selProj)} onSave={(n) => renameProj(selProj, n)} />
+            </div>
+          )}
+          {selPerson && (
+            <div className="phead">
+              <button className="clear" onClick={() => setSelPerson(null)}>← All people</button>
+              <div className="plabel">PERSON</div>
+              <div className="ptitle">{selPerson}</div>
             </div>
           )}
           <div className="controls">
@@ -190,9 +208,11 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                     <select className={`stk stk-${t.status}`} value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
                       {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
-                    <select className="proj-pick" value={t.project_id} onChange={(e) => move(t, e.target.value)}>
-                      {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    {view === "tasks" && (
+                      <select className="proj-pick" value={t.project_id} onChange={(e) => move(t, e.target.value)} title="Project">
+                        {data.projects.map((p) => <option key={p.id} value={p.id}>{projName(p.id)}</option>)}
+                      </select>
+                    )}
                   </div>
                   <div className="tcard-title">{t.project_id === ONEOFF_ID && <span className="oneoff-tag">one-off</span>}{t.title}</div>
                   <div className="chips">
@@ -231,11 +251,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 <select className={`stk stk-${openTask.status}`} value={openTask.status} onChange={(e) => changeStatus(openTask, e.target.value)}>
                   {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
-                <span className="src" style={{ marginLeft: 8 }}>{projName.get(openTask.project_id)}</span>
+                <span className="src" style={{ marginLeft: 8 }}>{projName(openTask.project_id)}</span>
               </div>
               <button className="clear" onClick={() => setOpenTaskId(null)}>✕</button>
             </div>
-            <h2 className="modal-title">{openTask.title}</h2>
+            <Editable className="modal-title" value={openTask.title} onSave={(n) => retitle(openTask, n)} />
+            <div className="src" style={{ marginBottom: 10 }}>Project: {projName(openTask.project_id)}</div>
             <div className="chips" style={{ marginBottom: 10 }}>
               {openTask.assignees.map((a) => <span key={a} className="who" onClick={() => rmA(openTask, a)}>{a} ×</span>)}
               <select className="streamsel" value="" onChange={(e) => { addA(openTask, e.target.value); e.currentTarget.value = ""; }}>
@@ -249,6 +270,20 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
       )}
     </>
   );
+}
+
+function Editable({ value, onSave, className }: { value: string; onSave: (v: string) => void; className?: string }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(value);
+  if (editing) {
+    return (
+      <input className={`edit-input ${className || ""}`} autoFocus value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => { onSave(v); setEditing(false); }}
+        onKeyDown={(e) => { if (e.key === "Enter") { onSave(v); setEditing(false); } if (e.key === "Escape") setEditing(false); }} />
+    );
+  }
+  return <span className={`editable ${className || ""}`} onClick={() => { setV(value); setEditing(true); }} title="click to edit">{value} <span className="pencil">✎</span></span>;
 }
 
 function Thread({ items, onPost }: { items: Comment[]; onPost: (body: string) => void }) {

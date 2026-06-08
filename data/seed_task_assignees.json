@@ -1,109 +1,5 @@
 [
  {
-  "task_id": "t10764942289",
-  "person_id": "rivka-simon"
- },
- {
-  "task_id": "t10764942289",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t10764942289",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10764942289",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10912212847",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t10912212847",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10912212847",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t11428390044",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t11428390044",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t11475342225",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t11771061736",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t11771061736",
-  "person_id": "declan-mcgettigan"
- },
- {
-  "task_id": "t11541917994",
-  "person_id": "rivka-simon"
- },
- {
-  "task_id": "t11541917994",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t11541917994",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t11629461663",
-  "person_id": "cory-waldron"
- },
- {
-  "task_id": "t11629461663",
-  "person_id": "jalen-fields"
- },
- {
-  "task_id": "t12074902962",
-  "person_id": "cory-waldron"
- },
- {
-  "task_id": "t12074902962",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t12074902962",
-  "person_id": "jalen-fields"
- },
- {
-  "task_id": "t12074902962",
-  "person_id": "declan-mcgettigan"
- },
- {
-  "task_id": "t12076129920",
-  "person_id": "cory-waldron"
- },
- {
-  "task_id": "t12076129920",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t12172599394",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t12172599394",
-  "person_id": "jalen-fields"
- },
- {
-  "task_id": "t12172599394",
-  "person_id": "declan-mcgettigan"
- },
- {
   "task_id": "s11587128597",
   "person_id": "declan-mcgettigan"
  },
@@ -744,18 +640,6 @@
   "person_id": "declan-mcgettigan"
  },
  {
-  "task_id": "t10747216433",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10747216433",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10747216433",
-  "person_id": "aharon-heiman"
- },
- {
   "task_id": "s18383223014",
   "person_id": "jack-harris"
  },
@@ -1028,18 +912,6 @@
   "person_id": "jack-harris"
  },
  {
-  "task_id": "t10914294515",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10914294515",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10914294515",
-  "person_id": "aharon-heiman"
- },
- {
   "task_id": "s11460266081",
   "person_id": "jack-harris"
  },
@@ -1086,26 +958,6 @@
  {
   "task_id": "s12158412543",
   "person_id": "jack-harris"
- },
- {
-  "task_id": "t18386754448",
-  "person_id": "michael-lang"
- },
- {
-  "task_id": "t18386754448",
-  "person_id": "david-azose"
- },
- {
-  "task_id": "t18386754448",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t18386754448",
-  "person_id": "rivka-simon"
- },
- {
-  "task_id": "t18386754448",
-  "person_id": "lior-goldstein"
  },
  {
   "task_id": "s11932881031",
@@ -1376,86 +1228,6 @@
   "person_id": "samuel-ghirmay"
  },
  {
-  "task_id": "t10715008674",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10911996474",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t10911996474",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10924097146",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10924097146",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t10962768510",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t10962768510",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10962768510",
-  "person_id": "rivka-simon"
- },
- {
-  "task_id": "t10962768510",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10962768510",
-  "person_id": "kayla-epstein"
- },
- {
-  "task_id": "t10630215769",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10630215769",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10630215769",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t10708700446",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10922101408",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t10922101408",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10914279043",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10914279043",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t11023883911",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t11023883911",
-  "person_id": "aharon-heiman"
- },
- {
   "task_id": "s11962054693",
   "person_id": "declan-mcgettigan"
  },
@@ -1464,68 +1236,12 @@
   "person_id": "declan-mcgettigan"
  },
  {
-  "task_id": "t18383264621",
-  "person_id": "cory-waldron"
- },
- {
-  "task_id": "t18383264621",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t18383264621",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t18383264621",
-  "person_id": "declan-mcgettigan"
- },
- {
-  "task_id": "t10672924141",
-  "person_id": "joshua-luck"
- },
- {
-  "task_id": "t10672924141",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10672924141",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t10911297488",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t10911297488",
-  "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t11040812202",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t11040812202",
-  "person_id": "declan-mcgettigan"
- },
- {
   "task_id": "s11736436870",
   "person_id": "jack-harris"
  },
  {
   "task_id": "s11736436870",
   "person_id": "aharon-heiman"
- },
- {
-  "task_id": "t10928306567",
-  "person_id": "lior-goldstein"
- },
- {
-  "task_id": "t10928306567",
-  "person_id": "jack-harris"
- },
- {
-  "task_id": "t11261262316",
-  "person_id": "jack-harris"
  },
  {
   "task_id": "s11629548315",

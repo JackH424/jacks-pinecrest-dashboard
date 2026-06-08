@@ -80,6 +80,17 @@ tr.done .title { text-decoration: line-through; }
 
 .crumb { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .crumb h2 { font-size: 18px; font-weight: 700; }
+.phead { margin-bottom: 18px; }
+.phead .clear { padding: 0; margin-bottom: 8px; display: inline-block; }
+.plabel { font-size: 11px; letter-spacing: .08em; color: var(--lo); font-weight: 700; }
+.ptitle { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; display: inline-block; }
+.editable { cursor: text; border-bottom: 1px dashed transparent; }
+.editable:hover { border-bottom-color: var(--border); }
+.pencil { color: var(--lo); font-size: .7em; opacity: 0; }
+.editable:hover .pencil { opacity: 1; }
+.edit-input { font: inherit; font-weight: 700; border: 1px solid var(--sage); border-radius: 6px; padding: 2px 8px; color: var(--hi); background: var(--surf); }
+.edit-input.ptitle { font-size: 24px; }
+.edit-input.modal-title { font-size: 17px; width: 100%; }
 .bar { margin-top: 10px; height: 6px; background: var(--surf2); border-radius: 4px; overflow: hidden; }
 .bar span { display: block; height: 100%; background: var(--sage); }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

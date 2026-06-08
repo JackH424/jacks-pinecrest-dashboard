@@ -1,89 +1,5 @@
 [
  {
-  "id": "t10764942289",
-  "project_id": "oneoff",
-  "title": "Enroller review",
-  "status": "in_progress",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10912212847",
-  "project_id": "oneoff",
-  "title": "Cyber Policy",
-  "status": "in_progress",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11428390044",
-  "project_id": "oneoff",
-  "title": "MOXO Build out",
-  "status": "in_progress",
-  "priority": 1,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11475342225",
-  "project_id": "oneoff",
-  "title": "Knime Self Paced Trainings",
-  "status": "in_progress",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11771061736",
-  "project_id": "oneoff",
-  "title": "Competitor research",
-  "status": "in_progress",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11541917994",
-  "project_id": "oneoff",
-  "title": "Mail Merge for DSP Leads",
-  "status": "in_progress",
-  "priority": 1,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11629461663",
-  "project_id": "oneoff",
-  "title": "AI 125 video with Max",
-  "status": "todo",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s11916552367",
   "project_id": "p11822639439",
   "title": "Onboarding / Renewals",
@@ -104,42 +20,6 @@
   "due": "",
   "source_type": "monday",
   "source_title": "Slack for DSPs",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t12074902962",
-  "project_id": "oneoff",
-  "title": "90 Day Out Renewal Claim Pull",
-  "status": "in_progress",
-  "priority": 1,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t12076129920",
-  "project_id": "oneoff",
-  "title": "AM and OC Email Forwarding",
-  "status": "todo",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t12172599394",
-  "project_id": "oneoff",
-  "title": "Quote PEO's for under 50 CORE and AFP",
-  "status": "in_progress",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
   "source_date": "",
   "source_url": ""
  },
@@ -1224,18 +1104,6 @@
   "source_url": ""
  },
  {
-  "id": "t10747216433",
-  "project_id": "oneoff",
-  "title": "Puerto Rico & Leading Edge - now Donny",
-  "status": "todo",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s18383223014",
   "project_id": "p18383213125",
   "title": "Nationwide / Allstate",
@@ -1620,18 +1488,6 @@
   "source_url": ""
  },
  {
-  "id": "t10914294515",
-  "project_id": "oneoff",
-  "title": "How to close more CORE",
-  "status": "todo",
-  "priority": 2,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s11460266081",
   "project_id": "p18383289547",
   "title": "Tax Credit for PFML",
@@ -1808,18 +1664,6 @@
   "due": "",
   "source_type": "monday",
   "source_title": "RxLess",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t18386754448",
-  "project_id": "oneoff",
-  "title": "Gary Baker",
-  "status": "in_progress",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
   "source_date": "",
   "source_url": ""
  },
@@ -2436,42 +2280,6 @@
   "source_url": ""
  },
  {
-  "id": "t10715008674",
-  "project_id": "oneoff",
-  "title": "Eli Bi-Weekly meetings",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10911996474",
-  "project_id": "oneoff",
-  "title": "Enroller Monthly Commissions",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10924097146",
-  "project_id": "oneoff",
-  "title": "Find a healthShare that pays us good money and offer it with a MVP",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s11076320439",
   "project_id": "p10928317606",
   "title": "A&I",
@@ -2504,78 +2312,6 @@
   "due": "",
   "source_type": "monday",
   "source_title": "Lior Appointed with all carriers / Remake the carrier appointment sheet",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10962768510",
-  "project_id": "oneoff",
-  "title": "Innovative Training Hub",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10630215769",
-  "project_id": "oneoff",
-  "title": "Happy Fleet",
-  "status": "todo",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10708700446",
-  "project_id": "oneoff",
-  "title": "Load Boards",
-  "status": "todo",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10922101408",
-  "project_id": "oneoff",
-  "title": "Allstate PERs",
-  "status": "in_progress",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10914279043",
-  "project_id": "oneoff",
-  "title": "Regional Carriers",
-  "status": "todo",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11023883911",
-  "project_id": "oneoff",
-  "title": "MEWA investigation",
-  "status": "todo",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
   "source_date": "",
   "source_url": ""
  },
@@ -2652,18 +2388,6 @@
   "source_url": ""
  },
  {
-  "id": "t18383264621",
-  "project_id": "oneoff",
-  "title": "Roll out BenefitHub to our clients",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s10672752567",
   "project_id": "p10671864879",
   "title": "Videos explaining benefits",
@@ -2736,42 +2460,6 @@
   "source_url": ""
  },
  {
-  "id": "t10672924141",
-  "project_id": "oneoff",
-  "title": "Data (Knime)",
-  "status": "todo",
-  "priority": 3,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10911297488",
-  "project_id": "oneoff",
-  "title": "Perks for work (is it more lucrative than BenefitsHub)",
-  "status": "todo",
-  "priority": 5,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11040812202",
-  "project_id": "oneoff",
-  "title": "Product for invoice recc Individual brokers",
-  "status": "todo",
-  "priority": 5,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
   "id": "s10911255853",
   "project_id": "p10911251105",
   "title": "E- Health",
@@ -2792,30 +2480,6 @@
   "due": "",
   "source_type": "monday",
   "source_title": "ICHRA Providers",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t10928306567",
-  "project_id": "oneoff",
-  "title": "LLM in General",
-  "status": "todo",
-  "priority": 4,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
-  "source_date": "",
-  "source_url": ""
- },
- {
-  "id": "t11261262316",
-  "project_id": "oneoff",
-  "title": "Epoch Boards (Data agg)",
-  "status": "todo",
-  "priority": 5,
-  "due": "",
-  "source_type": "monday",
-  "source_title": "One-off",
   "source_date": "",
   "source_url": ""
  },

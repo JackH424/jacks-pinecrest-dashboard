@@ -50,6 +50,26 @@ export async function moveTask(taskId: string, projectId: string) {
   return { ok: true };
 }
 
+export async function renameProject(projectId: string, name: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const n = (name || "").trim();
+  if (!n) return { ok: false, error: "empty" };
+  await sql`UPDATE projects SET name = ${n} WHERE id = ${projectId}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function updateTaskTitle(taskId: string, title: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const t = (title || "").trim();
+  if (!t) return { ok: false, error: "empty" };
+  await sql`UPDATE tasks2 SET title = ${t}, updated_at = now() WHERE id = ${taskId}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function addComment(
   targetType: "task" | "project", targetId: string, author: string, body: string
 ) {
