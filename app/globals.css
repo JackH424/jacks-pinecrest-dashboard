@@ -60,6 +60,13 @@ button { font: inherit; }
 .s-open { color: var(--sage); } .s-prog { color: #2f6fb0; } .s-blocked { color: var(--red); } .s-done { color: #2f7a4a; }
 .page-h { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
 
+/* Dashboard people filter */
+.pfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 16px; }
+.pfilter-l { color: var(--lo); font-size: 12px; margin-right: 4px; }
+.pchip { background: var(--surf); border: 1px solid var(--border); color: var(--hi); border-radius: 16px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.pchip:hover { border-color: var(--sage); }
+.pchip.on { background: var(--sage); border-color: var(--sage); color: #fff; font-weight: 600; }
+
 /* Dump / quick-add */
 .dump { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
 .dump .lbl { font-size: 12px; color: var(--lo); margin-bottom: 8px; }

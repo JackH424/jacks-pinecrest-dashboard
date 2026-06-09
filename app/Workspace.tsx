@@ -34,6 +34,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
   const [dump, setDump] = useState("");
+  const [peopleFilter, setPeopleFilter] = useState<string[]>([]);
+  function togglePerson(n: string) { setPeopleFilter((f) => f.includes(n) ? f.filter((x) => x !== n) : [...f, n]); }
 
   const idByName = useMemo(() => new Map(data.people.map((p) => [p.name, p.id])), [data.people]);
   const baseProjName = useMemo(() => new Map(data.projects.map((p) => [p.id, p.name])), [data.projects]);
@@ -42,7 +44,9 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
 
   const projStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); tasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [tasks]);
   const personOpen = useMemo(() => { const m = new Map<string, number>(); tasks.forEach((t) => { if (t.status !== "done") t.assignees.forEach((a) => m.set(a, (m.get(a) ?? 0) + 1)); }); return m; }, [tasks]);
-  const counts = useMemo(() => ({ open: tasks.filter((t) => t.status !== "done").length, inprog: tasks.filter((t) => t.status === "in_progress").length, blocked: tasks.filter((t) => t.status === "blocked").length, done: tasks.filter((t) => t.status === "done").length }), [tasks]);
+  const dashTasks = useMemo(() => peopleFilter.length === 0 ? tasks : tasks.filter((t) => t.assignees.some((a) => peopleFilter.includes(a))), [tasks, peopleFilter]);
+  const counts = useMemo(() => ({ open: dashTasks.filter((t) => t.status !== "done").length, inprog: dashTasks.filter((t) => t.status === "in_progress").length, blocked: dashTasks.filter((t) => t.status === "blocked").length, done: dashTasks.filter((t) => t.status === "done").length }), [dashTasks]);
+  const dashProjStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); dashTasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [dashTasks]);
   const commentsFor = (type: string, id: string) => comments.filter((c) => c.target_type === type && c.target_id === id).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
   const myMessages = useMemo(() => comments.filter((c) => (c.mentions || []).includes(primaryUser)).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [comments, primaryUser]);
 
@@ -90,7 +94,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function goView(v: View) { setView(v); setSelProj(null); setSelPerson(null); setAssignee(""); setAdding(false); }
 
   const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) : null;
-  const dashProjects = data.projects.filter((p) => (projStats.get(p.id)?.open ?? 0) > 0).sort((a, b) => (projStats.get(b.id)?.open ?? 0) - (projStats.get(a.id)?.open ?? 0));
+  const dashProjects = data.projects.filter((p) => (dashProjStats.get(p.id)?.open ?? 0) > 0).sort((a, b) => (dashProjStats.get(b.id)?.open ?? 0) - (dashProjStats.get(a.id)?.open ?? 0));
 
   return (
     <div className="app">
@@ -153,6 +157,13 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <div className="dash-grid">
             <div>
             <div className="page-h">Dashboard</div>
+            <div className="pfilter">
+              <span className="pfilter-l">Filter by person:</span>
+              <button className={`pchip ${peopleFilter.length === 0 ? "on" : ""}`} onClick={() => setPeopleFilter([])}>Everyone</button>
+              {TEAM.map((n) => (
+                <button key={n} className={`pchip ${peopleFilter.includes(n) ? "on" : ""}`} onClick={() => togglePerson(n)}>{n}</button>
+              ))}
+            </div>
             <div className="dump">
               <div className="lbl">◈ AI Assistant — dump tasks, one per line. <span className="hint">(AI parsing &amp; routing comes later via Hermes.)</span></div>
               <textarea placeholder="Dump tasks, notes, or anything…" value={dump} onChange={(e) => setDump(e.target.value)} />
@@ -167,9 +178,9 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             <div className="section-h">Projects</div>
             <div className="columns">
               {dashProjects.map((p) => {
-                const s = projStats.get(p.id) ?? { total: 0, open: 0 };
+                const s = dashProjStats.get(p.id) ?? { total: 0, open: 0 };
                 const pct = s.total ? Math.round(((s.total - s.open) / s.total) * 100) : 0;
-                const open = tasks.filter((t) => t.project_id === p.id && t.status !== "done").slice(0, 7);
+                const open = dashTasks.filter((t) => t.project_id === p.id && t.status !== "done").slice(0, 7);
                 const more = s.open - open.length;
                 return (
                   <div key={p.id} className="col">
