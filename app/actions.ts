@@ -50,6 +50,14 @@ export async function moveTask(taskId: string, projectId: string) {
   return { ok: true };
 }
 
+export async function setDue(taskId: string, due: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`UPDATE tasks2 SET due = ${due || ""}, updated_at = now() WHERE id = ${taskId}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function renameProject(projectId: string, name: string) {
   const sql = getSql();
   if (!sql) return { ok: false, error: "no database" };

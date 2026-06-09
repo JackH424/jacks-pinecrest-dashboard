@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue } from "./actions";
 
 type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
 const STUBS: Record<string, string> = { calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
@@ -37,6 +37,11 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [dump, setDump] = useState("");
   const [peopleFilter, setPeopleFilter] = useState<string[]>([]);
   function togglePerson(n: string) { setPeopleFilter((f) => f.includes(n) ? f.filter((x) => x !== n) : [...f, n]); }
+  const [dueFilter, setDueFilter] = useState<"any" | "overdue" | "week" | "month">("any");
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAhead = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const monthAhead = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+  function dueClass(due: string) { if (!due) return ""; if (due < today) return "overdue"; return due <= weekAhead ? "soon" : ""; }
 
   const idByName = useMemo(() => new Map(data.people.map((p) => [p.name, p.id])), [data.people]);
   const baseProjName = useMemo(() => new Map(data.projects.map((p) => [p.id, p.name])), [data.projects]);
@@ -59,10 +64,16 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
       if (assignee && !t.assignees.includes(assignee)) return false;
       if (sf === "open" && t.status === "done") return false;
       if (sf === "done" && t.status !== "done") return false;
+      if (dueFilter !== "any") {
+        if (!t.due) return false;
+        if (dueFilter === "overdue" && !(t.due < today)) return false;
+        if (dueFilter === "week" && t.due > weekAhead) return false;
+        if (dueFilter === "month" && t.due > monthAhead) return false;
+      }
       if (ql && !(t.title.toLowerCase().includes(ql) || t.source_title.toLowerCase().includes(ql))) return false;
       return true;
     });
-  }, [tasks, view, selProj, selPerson, assignee, sf, q]);
+  }, [tasks, view, selProj, selPerson, assignee, sf, q, dueFilter, today, weekAhead, monthAhead]);
 
   const STATUS_ORDER: Record<string, number> = { todo: 0, in_progress: 1, waiting: 2, blocked: 3, done: 4 };
   const sortedRows = useMemo(() => {
@@ -85,6 +96,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function addA(t: Task, n: string) { if (!n || t.assignees.includes(n)) return; const pid = idByName.get(n); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: [...x.assignees, n].sort() })); if (persists) start(() => { toggleAssignee(t.id, pid, true); }); }
   function rmA(t: Task, n: string) { const pid = idByName.get(n); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: x.assignees.filter((a) => a !== n) })); if (persists) start(() => { toggleAssignee(t.id, pid, false); }); }
   function move(t: Task, pid: string) { patch(t.id, (x) => ({ ...x, project_id: pid })); if (persists) start(() => { moveTask(t.id, pid); }); }
+  function changeDue(t: Task, due: string) { patch(t.id, (x) => ({ ...x, due })); if (persists) start(() => { setDue(t.id, due); }); }
   function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: primaryUser, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, primaryUser, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
@@ -276,6 +288,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                   <option value="status">Sort: status</option>
                 </select>
               )}
+              <select className="streamsel" value={dueFilter} onChange={(e) => setDueFilter(e.target.value as "any" | "overdue" | "week" | "month")} title="Due">
+                <option value="any">Due: any</option>
+                <option value="overdue">Overdue</option>
+                <option value="week">Due this week</option>
+                <option value="month">Due this month</option>
+              </select>
               <span className="spacer" />
               <input placeholder="Search tasks…" value={q} onChange={(e) => setQ(e.target.value)} />
               <button className="newbtn" onClick={() => setAdding((a) => !a)}>+ New task</button>
@@ -315,7 +333,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             {sortedRows.length === 0 ? <div className="empty">No tasks match.</div> : (
               <div className="tasklist">
                 {sortedRows.slice(0, 300).map((t) => (
-                  <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""}`}>
+                  <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""} ${dueClass(t.due)}`}>
                     <div className="tcard-top">
                       <select className={`stk stk-${t.status}`} value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
                         {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -337,8 +355,9 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                       </select>
                     </div>
                     <div className="tcard-foot">
-                      <button className="linkbtn" onClick={() => setOpenTaskId(t.id)}>💬 Discuss{commentsFor("task", t.id).length ? ` (${commentsFor("task", t.id).length})` : ""}</button>
-                      {t.source_url && <> · <a className="src" href={t.source_url} target="_blank" rel="noreferrer">source</a></>}
+                      <input type="date" className={`dueinput ${dueClass(t.due)}`} value={t.due || ""} onChange={(e) => changeDue(t, e.target.value)} title="Due date" />
+                      <button className="linkbtn" onClick={() => setOpenTaskId(t.id)}>💬 {commentsFor("task", t.id).length || ""}</button>
+                      {t.source_url && <a className="src" href={t.source_url} target="_blank" rel="noreferrer">source</a>}
                     </div>
                   </div>
                 ))}
@@ -368,7 +387,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               <button className="clear" onClick={() => setOpenTaskId(null)}>✕</button>
             </div>
             <Editable className="modal-title" value={openTask.title} onSave={(n) => retitle(openTask, n)} />
-            <div className="src" style={{ marginBottom: 10 }}>Project: {projName(openTask.project_id)}</div>
+            <div className="src" style={{ marginBottom: 10 }}>Project: {projName(openTask.project_id)} · Due: <input type="date" className={`dueinput ${dueClass(openTask.due)}`} value={openTask.due || ""} onChange={(e) => changeDue(openTask, e.target.value)} /></div>
             <div className="chips" style={{ marginBottom: 10 }}>
               {openTask.assignees.map((a) => <span key={a} className="who" onClick={() => rmA(openTask, a)}>{a} ×</span>)}
               <select className="streamsel" value="" onChange={(e) => { addA(openTask, e.target.value); e.currentTarget.value = ""; }}>

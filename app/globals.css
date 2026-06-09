@@ -144,6 +144,11 @@ button { font: inherit; }
 .tcard:hover { border-color: #cdd3cb; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
 .tcard.done { opacity: .55; }
 .tcard.done .tcard-title { text-decoration: line-through; }
+.tcard.overdue { border-color: #d98b78; background: #fbeae3; }
+.tcard.soon { border-color: #e6d09a; background: #faf4e4; }
+.dueinput { font-size: 11px; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; background: var(--surf); color: var(--lo); }
+.dueinput.overdue { color: var(--red); border-color: #d98b78; font-weight: 700; }
+.dueinput.soon { color: #8a6212; border-color: #e6d09a; }
 .tcard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tcard-title { font-weight: 600; font-size: 14px; }
 .tcard-foot { color: var(--lo); font-size: 12px; }
