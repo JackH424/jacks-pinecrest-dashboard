@@ -60,6 +60,17 @@ button { font: inherit; }
 .s-open { color: var(--sage); } .s-prog { color: #2f6fb0; } .s-blocked { color: var(--red); } .s-done { color: #2f7a4a; }
 .page-h { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
 
+/* AI chat */
+.chat { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
+.chat .lbl { font-size: 12px; color: var(--lo); margin-bottom: 10px; }
+.chat-msgs { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; margin-bottom: 10px; }
+.chat-msg { padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; white-space: pre-wrap; }
+.chat-msg.user { align-self: flex-end; background: var(--sage); color: #fff; }
+.chat-msg.assistant { align-self: flex-start; background: var(--surf2); color: var(--hi); }
+.chat textarea { width: 100%; min-height: 60px; resize: vertical; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--base); color: var(--hi); }
+.chat .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.chat .hint { color: var(--lo); font-size: 12px; }
+
 /* Dashboard people filter */
 .pfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 16px; }
 .pfilter-l { color: var(--lo); font-size: 12px; margin-right: 4px; }

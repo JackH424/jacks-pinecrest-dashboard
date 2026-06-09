@@ -5,6 +5,7 @@ import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
 import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription } from "./actions";
+import AiChat from "./AiChat";
 
 type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
 const STUBS: Record<string, string> = { calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
@@ -34,7 +35,6 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
-  const [dump, setDump] = useState("");
   const [peopleFilter, setPeopleFilter] = useState<string[]>([]);
   function togglePerson(n: string) { setPeopleFilter((f) => f.includes(n) ? f.filter((x) => x !== n) : [...f, n]); }
   const [dueFilter, setDueFilter] = useState<"any" | "overdue" | "week" | "month">("any");
@@ -107,7 +107,6 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     if (persists) start(() => { addTask(title, proj, whoName ? [idByName.get(whoName) || ""] : []); });
   }
   function submitForm() { const t = ntTitle.trim(); if (!t) return; createTaskRaw(t, selProj || ONEOFF_ID, ntWho); setNtTitle(""); setNtWho(""); setAdding(false); }
-  function sendDump() { dump.split("\n").map((s) => s.trim()).filter(Boolean).forEach((l) => createTaskRaw(l, ONEOFF_ID, "")); setDump(""); }
 
   function goProject(id: string) { setView("project"); setSelProj(id); setSelPerson(null); }
   function goPerson(n: string) { setView("person"); setSelPerson(n); setSelProj(null); }
@@ -184,11 +183,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 <button key={n} className={`pchip ${peopleFilter.includes(n) ? "on" : ""}`} onClick={() => togglePerson(n)}>{n}</button>
               ))}
             </div>
-            <div className="dump">
-              <div className="lbl">◈ AI Assistant — dump tasks, one per line. <span className="hint">(AI parsing &amp; routing comes later via Hermes.)</span></div>
-              <textarea placeholder="Dump tasks, notes, or anything…" value={dump} onChange={(e) => setDump(e.target.value)} />
-              <div className="row"><span className="hint">Enter to send · Shift+Enter new line</span><button className="btn-primary" onClick={sendDump} disabled={!dump.trim()}>Send</button></div>
-            </div>
+            <AiChat />
             <div className="stats">
               <div className="stat"><div className="n s-open">{counts.open}</div><div className="l">Open</div></div>
               <div className="stat"><div className="n s-prog">{counts.inprog}</div><div className="l">In progress</div></div>
