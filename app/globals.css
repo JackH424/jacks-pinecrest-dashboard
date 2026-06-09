@@ -195,6 +195,9 @@ button { font: inherit; }
 .modal { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 620px; max-height: 86vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
 .modal-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; display: inline-block; }
+.descbox { margin-bottom: 14px; }
+.desc-l { font-size: 11px; letter-spacing: .05em; color: var(--lo); font-weight: 700; margin-bottom: 4px; }
+.desc { width: 100%; min-height: 70px; resize: vertical; background: var(--base); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; color: var(--hi); }
 .empty { padding: 40px; text-align: center; color: var(--lo); }
 .note { color: var(--lo); font-size: 12px; margin-top: 16px; }
 

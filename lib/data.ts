@@ -21,7 +21,7 @@ export type Person = { id: string; name: string; open: number };
 export type Task = {
   id: string; project_id: string; title: string; status: string;
   priority: string; due: string; source_type: string; source_title: string;
-  source_date: string; source_url: string; assignees: string[];
+  source_date: string; source_url: string; description: string; assignees: string[];
 };
 export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[] };
 
@@ -38,6 +38,7 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
     source_type text DEFAULT 'manual', source_title text DEFAULT '', source_date text DEFAULT '', source_url text DEFAULT '',
     updated_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS task_assignees (task_id text, person_id text, PRIMARY KEY (task_id, person_id))`;
+  await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS description text DEFAULT ''`;
   await sql`CREATE TABLE IF NOT EXISTS comments (
     id text PRIMARY KEY, target_type text NOT NULL, target_id text NOT NULL,
     author text NOT NULL DEFAULT 'Unknown', body text NOT NULL DEFAULT '',
@@ -75,7 +76,7 @@ function fallback(): Workspace {
   (seedAssignees as { task_id: string; person_id: string }[]).forEach((a) => {
     const arr = aByTask.get(a.task_id) ?? []; arr.push(id2name.get(a.person_id) ?? a.person_id); aByTask.set(a.task_id, arr);
   });
-  const tasks = (seedTasks as Omit<Task, "assignees">[]).map((t) => ({ ...t, assignees: aByTask.get(t.id) ?? [] }));
+  const tasks = (seedTasks as Record<string, unknown>[]).map((t) => ({ description: "", ...t, assignees: aByTask.get(t.id as string) ?? [] })) as unknown as Task[];
   const membersByProj = new Map<string, string[]>();
   (seedMembers as { project_id: string; person_id: string }[]).forEach((m) => {
     const arr = membersByProj.get(m.project_id) ?? []; arr.push(id2name.get(m.person_id) ?? m.person_id); membersByProj.set(m.project_id, arr);
@@ -96,7 +97,7 @@ export async function getWorkspace(): Promise<Workspace> {
   try {
     await ensureReady(sql);
     const tasks = (await sql`
-      SELECT t.id,t.project_id,t.title,t.status,t.priority,t.due,t.source_type,t.source_title,t.source_date,t.source_url,
+      SELECT t.id,t.project_id,t.title,t.status,t.priority,t.due,t.source_type,t.source_title,t.source_date,t.source_url,COALESCE(t.description,'') AS description,
         COALESCE(json_agg(p.name ORDER BY p.name) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS assignees
       FROM tasks2 t LEFT JOIN task_assignees ta ON ta.task_id=t.id LEFT JOIN people p ON p.id=ta.person_id
       GROUP BY t.id ORDER BY (t.status='done'), t.source_date DESC NULLS LAST`) as Task[];

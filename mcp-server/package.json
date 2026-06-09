@@ -1,0 +1,13 @@
+{
+  "name": "pinecrest-mc-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "pinecrest-mc": "index.mjs" },
+  "description": "MCP server exposing Pinecrest Mission Control tools (tasks/projects) for Hermes/Codex",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "zod": "^3.23.0"
+  }
+}

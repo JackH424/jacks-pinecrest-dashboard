@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription } from "./actions";
 
 type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
 const STUBS: Record<string, string> = { calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
@@ -97,12 +97,13 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function rmA(t: Task, n: string) { const pid = idByName.get(n); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: x.assignees.filter((a) => a !== n) })); if (persists) start(() => { toggleAssignee(t.id, pid, false); }); }
   function move(t: Task, pid: string) { patch(t.id, (x) => ({ ...x, project_id: pid })); if (persists) start(() => { moveTask(t.id, pid); }); }
   function changeDue(t: Task, due: string) { patch(t.id, (x) => ({ ...x, due })); if (persists) start(() => { setDue(t.id, due); }); }
+  function changeDesc(t: Task, d: string) { patch(t.id, (x) => ({ ...x, description: d })); if (persists) start(() => { setDescription(t.id, d); }); }
   function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: primaryUser, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, primaryUser, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
   function createTaskRaw(title: string, proj: string, whoName: string) {
     const id = "tmp" + Math.random().toString(36).slice(2);
-    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", assignees: whoName ? [whoName] : [] }, ...ts]);
+    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", assignees: whoName ? [whoName] : [] }, ...ts]);
     if (persists) start(() => { addTask(title, proj, whoName ? [idByName.get(whoName) || ""] : []); });
   }
   function submitForm() { const t = ntTitle.trim(); if (!t) return; createTaskRaw(t, selProj || ONEOFF_ID, ntWho); setNtTitle(""); setNtWho(""); setAdding(false); }
@@ -395,6 +396,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 {TEAM.filter((n) => !openTask.assignees.includes(n)).map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
+            <DescriptionBox key={openTask.id} value={openTask.description || ""} onSave={(d) => changeDesc(openTask, d)} />
             <Thread items={commentsFor("task", openTask.id)} onPost={(b) => post("task", openTask.id, b)} />
           </div>
         </div>
@@ -411,6 +413,16 @@ function Editable({ value, onSave, className }: { value: string; onSave: (v: str
     return (<input className={`edit-input ${className || ""}`} autoFocus value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { onSave(v); setEditing(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onSave(v); setEditing(false); } if (e.key === "Escape") setEditing(false); }} />);
   }
   return <span className={`editable ${className || ""}`} onClick={() => { setV(value); setEditing(true); }} title="click to edit">{value} <span className="pencil">✎</span></span>;
+}
+
+function DescriptionBox({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [v, setV] = useState(value);
+  return (
+    <div className="descbox">
+      <div className="desc-l">Description / context</div>
+      <textarea className="desc" placeholder="Add context so the team understands this task…" value={v} onChange={(e) => setV(e.target.value)} onBlur={() => onSave(v)} />
+    </div>
+  );
 }
 
 function Thread({ items, onPost }: { items: Comment[]; onPost: (body: string) => void }) {
