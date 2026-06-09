@@ -141,6 +141,8 @@ button { font: inherit; }
 .tcard-title { font-weight: 600; font-size: 14px; }
 .tcard-foot { color: var(--lo); font-size: 12px; }
 .proj-pick { border: none; background: var(--surf2); color: var(--lo); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 60%; }
+.proj-chip { background: var(--surf2); color: var(--lo); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; font-size: 11px; font-weight: 600; cursor: pointer; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-chip:hover { color: var(--sage); border-color: var(--sage); }
 .linkbtn { background: none; border: none; color: var(--sage); cursor: pointer; font-size: 12px; padding: 0; }
 
 /* Status stickers */

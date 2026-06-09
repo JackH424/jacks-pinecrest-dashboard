@@ -29,6 +29,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [q, setQ] = useState("");
   const [sf, setSf] = useState<SF>("open");
   const [assignee, setAssignee] = useState("");
+  const [sortBy, setSortBy] = useState<"none" | "project" | "status">("none");
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
@@ -57,6 +58,15 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
       return true;
     });
   }, [tasks, view, selProj, selPerson, assignee, sf, q]);
+
+  const STATUS_ORDER: Record<string, number> = { todo: 0, in_progress: 1, waiting: 2, blocked: 3, done: 4 };
+  const sortedRows = useMemo(() => {
+    if (sortBy === "none") return rows;
+    const r = [...rows];
+    if (sortBy === "project") r.sort((a, b) => projName(a.project_id).localeCompare(projName(b.project_id)));
+    else r.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
+    return r;
+  }, [rows, sortBy, projOverride]);
 
   function patch(id: string, fn: (t: Task) => Task) { setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
   function changeStatus(t: Task, status: string) { patch(t.id, (x) => ({ ...x, status })); if (persists) start(() => { setStatus(t.id, status); }); }
@@ -235,6 +245,13 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                   {TEAM.map((n) => <option key={n} value={n}>{n} ({personOpen.get(n) ?? 0})</option>)}
                 </select>
               )}
+              {(view === "person" || view === "tasks") && (
+                <select className="streamsel" value={sortBy} onChange={(e) => setSortBy(e.target.value as "none" | "project" | "status")}>
+                  <option value="none">Sort: default</option>
+                  <option value="project">Sort: project</option>
+                  <option value="status">Sort: status</option>
+                </select>
+              )}
               <span className="spacer" />
               <input placeholder="Search tasks…" value={q} onChange={(e) => setQ(e.target.value)} />
               <button className="newbtn" onClick={() => setAdding((a) => !a)}>+ New task</button>
@@ -250,19 +267,21 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               </div>
             )}
 
-            {rows.length === 0 ? <div className="empty">No tasks match.</div> : (
+            {sortedRows.length === 0 ? <div className="empty">No tasks match.</div> : (
               <div className="tasklist">
-                {rows.slice(0, 300).map((t) => (
+                {sortedRows.slice(0, 300).map((t) => (
                   <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""}`}>
                     <div className="tcard-top">
                       <select className={`stk stk-${t.status}`} value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
                         {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                       </select>
-                      {view === "tasks" && (
+                      {view === "tasks" ? (
                         <select className="proj-pick" value={t.project_id} onChange={(e) => move(t, e.target.value)} title="Project">
                           {data.projects.map((p) => <option key={p.id} value={p.id}>{projName(p.id)}</option>)}
                         </select>
-                      )}
+                      ) : view !== "project" ? (
+                        <span className="proj-chip" onClick={() => goProject(t.project_id)} title="Open project">{projName(t.project_id)}</span>
+                      ) : null}
                     </div>
                     <div className="tcard-title">{t.project_id === ONEOFF_ID && <span className="oneoff-tag">one-off</span>}{t.title}</div>
                     <div className="chips">
@@ -280,7 +299,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 ))}
               </div>
             )}
-            {rows.length > 300 && <p className="note">Showing first 300 of {rows.length} — filter or search.</p>}
+            {sortedRows.length > 300 && <p className="note">Showing first 300 of {sortedRows.length} — filter or search.</p>}
 
             {view === "project" && selProj && (
               <div className="thread">
