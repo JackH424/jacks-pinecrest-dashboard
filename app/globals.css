@@ -36,9 +36,28 @@ button { font: inherit; }
 .side-item .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .side-item .ct { background: var(--surf); border: 1px solid var(--border); color: var(--lo); border-radius: 10px; font-size: 11px; padding: 0 7px; min-width: 20px; text-align: center; }
 .addbtn { background: none; border: none; color: var(--sage); cursor: pointer; font-size: 12px; padding: 6px 10px; }
+.side-foot { margin-top: 20px; padding: 12px; background: var(--surf); border: 1px solid var(--border); border-radius: 10px; }
+.gcal { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+.gcal-sub { color: var(--lo); font-size: 11px; margin-top: 2px; }
+
+/* Main area + top bar */
+.main-area { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 20px; padding: 12px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--base); z-index: 10; }
+.topsearch { flex: none; width: 320px; background: var(--surf); border: 1px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 13px; color: var(--hi); }
+.tabs { display: flex; gap: 4px; }
+.tab { background: none; border: none; color: var(--lo); padding: 8px 10px; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+.tab.on { color: var(--hi); font-weight: 600; border-bottom-color: var(--sage); }
 
 /* Content */
-.content { padding: 24px 28px 60px; max-width: 1300px; }
+.content { padding: 24px 28px 60px; }
+.dash-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+.rail { display: flex; flex-direction: column; gap: 14px; }
+.rail-card { background: var(--surf); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.rail-h { font-size: 11px; letter-spacing: .06em; color: var(--lo); font-weight: 700; margin-bottom: 12px; }
+.empty-rail { color: var(--lo); font-size: 13px; text-align: center; padding: 14px 0; }
+.stub { padding: 10px; }
+.logdecision { position: fixed; bottom: 22px; right: 24px; background: #7a2f4a; color: #fff; border: none; border-radius: 22px; padding: 11px 18px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+.s-open { color: var(--sage); } .s-prog { color: #2f6fb0; } .s-blocked { color: var(--red); } .s-done { color: #2f7a4a; }
 .page-h { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
 
 /* Dump / quick-add */

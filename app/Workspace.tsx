@@ -6,7 +6,8 @@ import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
 import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle } from "./actions";
 
-type View = "dashboard" | "project" | "person" | "tasks" | "messages";
+type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
+const STUBS: Record<string, string> = { calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 type SF = "open" | "all" | "done";
 const PCOLORS = ["#c2702f", "#2f8f87", "#3a4a78", "#7a4a78", "#5c7a4a", "#a8852f", "#b3422f", "#2f6fb0", "#6b3fa0", "#2f7a4a"];
 
@@ -84,7 +85,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="logo">mission<span className="af">.control</span></div>
+        <div className="logo">pinecrest<span className="af">.hq</span></div>
+        <div className="side-h">OVERVIEW</div>
         <nav className="sidenav">
           <button className={`navlink ${view === "dashboard" ? "on" : ""}`} onClick={() => goView("dashboard")}>Dashboard</button>
           <button className={`navlink ${view === "tasks" ? "on" : ""}`} onClick={() => goView("tasks")}>All tasks</button>
@@ -109,22 +111,48 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             </div>
           ))}
         </div>
+        <div className="side-sec">
+          <div className="side-h">LOGS</div>
+          <div className="side-item" onClick={() => goView("transcripts")}><span className="nm">Transcripts</span></div>
+          <div className="side-item" onClick={() => goView("decisions")}><span className="nm">Decision Log</span></div>
+          <div className="side-item" onClick={() => goView("vendors")}><span className="nm">Vendors</span></div>
+        </div>
+        <div className="side-foot">
+          <div className="gcal"><span className="dot" style={{ background: "var(--sage)" }} /> Google Calendar</div>
+          <div className="gcal-sub">Connect later</div>
+        </div>
       </aside>
 
-      <main className="content">
+      <div className="main-area">
+        <div className="topbar">
+          <input className="topsearch" placeholder="Search everything…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) goView("tasks"); }} />
+          <nav className="tabs">
+            {(["dashboard", "calendar", "transcripts", "decisions", "vendors"] as View[]).map((v) => (
+              <button key={v} className={`tab ${view === v ? "on" : ""}`} onClick={() => goView(v)}>{v === "dashboard" ? "Dashboard" : STUBS[v]}</button>
+            ))}
+          </nav>
+        </div>
+        <main className="content">
+        {(view in STUBS) && (
+          <div className="stub">
+            <div className="page-h">{STUBS[view]}</div>
+            <div className="empty">{STUBS[view]} is planned — not built yet. Tell me to prioritize it and I&apos;ll wire it up.</div>
+          </div>
+        )}
         {view === "dashboard" && (
-          <>
+          <div className="dash-grid">
+            <div>
             <div className="page-h">Dashboard</div>
             <div className="dump">
-              <div className="lbl">Quick add — type tasks (one per line) and send. They land in One-off tasks.</div>
-              <textarea placeholder="Dump tasks, one per line…" value={dump} onChange={(e) => setDump(e.target.value)} />
-              <div className="row"><span className="hint">AI parsing &amp; routing comes later (Hermes).</span><button className="btn-primary" onClick={sendDump} disabled={!dump.trim()}>Add tasks</button></div>
+              <div className="lbl">◈ AI Assistant — dump tasks, one per line. <span className="hint">(AI parsing &amp; routing comes later via Hermes.)</span></div>
+              <textarea placeholder="Dump tasks, notes, or anything…" value={dump} onChange={(e) => setDump(e.target.value)} />
+              <div className="row"><span className="hint">Enter to send · Shift+Enter new line</span><button className="btn-primary" onClick={sendDump} disabled={!dump.trim()}>Send</button></div>
             </div>
             <div className="stats">
-              <div className="stat"><div className="n">{counts.open}</div><div className="l">Open</div></div>
-              <div className="stat"><div className="n">{counts.inprog}</div><div className="l">In progress</div></div>
-              <div className="stat"><div className="n">{counts.blocked}</div><div className="l">Blocked</div></div>
-              <div className="stat"><div className="n">{counts.done}</div><div className="l">Done</div></div>
+              <div className="stat"><div className="n s-open">{counts.open}</div><div className="l">Open</div></div>
+              <div className="stat"><div className="n s-prog">{counts.inprog}</div><div className="l">In progress</div></div>
+              <div className="stat"><div className="n s-blocked">{counts.blocked}</div><div className="l">Blocked</div></div>
+              <div className="stat"><div className="n s-done">{counts.done}</div><div className="l">Done</div></div>
             </div>
             <div className="section-h">Projects</div>
             <div className="columns">
@@ -147,13 +175,19 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                       </div>
                     ))}
                     {more > 0 && <div className="row-t" style={{ color: "var(--lo)", cursor: "pointer" }} onClick={() => goProject(p.id)}>+{more} more</div>}
+                    <div className="miniadd" onClick={() => goProject(p.id)}>+ add</div>
                     <div className="bar"><span style={{ width: `${pct}%` }} /></div>
                     <div className="progress">{s.total - s.open}/{s.total} done</div>
                   </div>
                 );
               })}
             </div>
-          </>
+            </div>
+            <aside className="rail">
+              <div className="rail-card"><div className="rail-h">REMINDERS TODAY</div><div className="empty-rail">🔔 No reminders today</div></div>
+              <div className="rail-card"><div className="rail-h">UPCOMING</div><div className="empty-rail">Nothing upcoming</div></div>
+            </aside>
+          </div>
         )}
 
         {view === "messages" && (
@@ -256,7 +290,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             )}
           </>
         )}
-      </main>
+        </main>
+      </div>
 
       {openTask && (
         <div className="overlay" onClick={() => setOpenTaskId(null)}>
@@ -280,6 +315,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           </div>
         </div>
       )}
+      <button className="logdecision" onClick={() => goView("decisions")}>⚡ Log Decision</button>
     </div>
   );
 }
