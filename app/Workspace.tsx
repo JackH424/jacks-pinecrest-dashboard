@@ -30,6 +30,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [sf, setSf] = useState<SF>("open");
   const [assignee, setAssignee] = useState("");
   const [sortBy, setSortBy] = useState<"none" | "project" | "status">("none");
+  const [personMode, setPersonMode] = useState<"project" | "task">("project");
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
@@ -71,6 +72,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     else r.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
     return r;
   }, [rows, sortBy, projOverride]);
+
+  const personGroups = useMemo(() => {
+    const m = new Map<string, Task[]>();
+    if (view === "person") rows.forEach((t) => { const a = m.get(t.project_id) ?? []; a.push(t); m.set(t.project_id, a); });
+    return [...m.entries()].sort((a, b) => projName(a[0]).localeCompare(projName(b[0])));
+  }, [rows, view, projOverride]);
 
   function patch(id: string, fn: (t: Task) => Task) { setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
   function changeStatus(t: Task, status: string) { patch(t.id, (x) => ({ ...x, status })); if (persists) start(() => { setStatus(t.id, status); }); }
@@ -242,6 +249,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 <div className="ptitle">{selPerson}</div>
               </div>
             )}
+            {view === "person" && (
+              <div className="seg" style={{ marginBottom: 14 }}>
+                <button className={personMode === "project" ? "on" : ""} onClick={() => setPersonMode("project")}>By project</button>
+                <button className={personMode === "task" ? "on" : ""} onClick={() => setPersonMode("task")}>By task</button>
+              </div>
+            )}
             {view === "tasks" && <div className="page-h">All tasks</div>}
 
             <div className="controls">
@@ -256,7 +269,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                   {TEAM.map((n) => <option key={n} value={n}>{n} ({personOpen.get(n) ?? 0})</option>)}
                 </select>
               )}
-              {(view === "person" || view === "tasks") && (
+              {(view === "tasks" || (view === "person" && personMode === "task")) && (
                 <select className="streamsel" value={sortBy} onChange={(e) => setSortBy(e.target.value as "none" | "project" | "status")}>
                   <option value="none">Sort: default</option>
                   <option value="project">Sort: project</option>
@@ -278,6 +291,27 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               </div>
             )}
 
+            {view === "person" && personMode === "project" ? (
+              personGroups.length === 0 ? <div className="empty">No tasks.</div> : (
+                <div className="columns">
+                  {personGroups.map(([pid, items]) => (
+                    <div key={pid} className="col">
+                      <div className="col-h" onClick={() => goProject(pid)}>
+                        <span className="dot" style={{ background: projColor.get(pid) }} />
+                        <span className="nm">{projName(pid)}</span>
+                        <span className="all">Open</span>
+                      </div>
+                      {items.map((t) => (
+                        <div key={t.id} className={`row-t ${t.status === "done" ? "done" : ""}`}>
+                          <input type="checkbox" checked={t.status === "done"} onChange={() => toggleDone(t)} />
+                          <span onClick={() => setOpenTaskId(t.id)} style={{ cursor: "pointer", flex: 1 }}>{t.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (<>
             {sortedRows.length === 0 ? <div className="empty">No tasks match.</div> : (
               <div className="tasklist">
                 {sortedRows.slice(0, 300).map((t) => (
@@ -311,6 +345,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               </div>
             )}
             {sortedRows.length > 300 && <p className="note">Showing first 300 of {sortedRows.length} — filter or search.</p>}
+            </>)}
 
             {view === "project" && selProj && (
               <div className="thread">
