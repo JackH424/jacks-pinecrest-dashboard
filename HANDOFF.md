@@ -75,7 +75,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       completing a repeating task spawns next instance w/ advanced due. Modal selector.
 - [x] 3. **"Hasn't moved" stale panel** — dashboard section listing open tasks with
       `updated_at` > 10 days, w/ project chip + days count (like Kayla's).
-- [ ] 4. **Identity picker (login-lite)** — "Who are you?" dropdown of the 6, stored
+- [x] 4. **Identity picker (login-lite)** — "Who are you?" dropdown of the 6, stored
       localStorage; replaces hardcoded primaryUser for "(me)", Messages, My Day,
       Telegram mapping. (Real Clerk auth = later A3, Jack deferred.)
 - [ ] 5. **Unread state** — table comment_reads(person_id,comment_id,read_at);

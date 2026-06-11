@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
@@ -38,6 +38,16 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
+  // Viewer identity (login-lite): stored in localStorage, defaults to Jack.
+  const [viewer, setViewer] = useState<string>(primaryUser);
+  const [showPicker, setShowPicker] = useState(false);
+  useEffect(() => {
+    const v = typeof window !== "undefined" ? window.localStorage.getItem("mc_viewer") : null;
+    if (v && TEAM.includes(v)) setViewer(v);
+    else setShowPicker(true);
+  }, [primaryUser]);
+  function pickViewer(n: string) { setViewer(n); window.localStorage.setItem("mc_viewer", n); setShowPicker(false); }
+
   const [peopleFilter, setPeopleFilter] = useState<string[]>([]);
   function togglePerson(n: string) { setPeopleFilter((f) => f.includes(n) ? f.filter((x) => x !== n) : [...f, n]); }
   const [dueFilter, setDueFilter] = useState<"any" | "overdue" | "week" | "month">("any");
@@ -65,7 +75,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const counts = useMemo(() => ({ open: dashTasks.filter((t) => t.status !== "done").length, inprog: dashTasks.filter((t) => t.status === "in_progress").length, blocked: dashTasks.filter((t) => t.status === "blocked").length, done: dashTasks.filter((t) => t.status === "done").length }), [dashTasks]);
   const dashProjStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); dashTasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [dashTasks]);
   const commentsFor = (type: string, id: string) => comments.filter((c) => c.target_type === type && c.target_id === id).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
-  const myMessages = useMemo(() => comments.filter((c) => (c.mentions || []).includes(primaryUser)).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [comments, primaryUser]);
+  const myMessages = useMemo(() => comments.filter((c) => (c.mentions || []).includes(viewer)).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [comments, viewer]);
 
   const rows = useMemo(() => {
     const ql = q.toLowerCase();
@@ -117,7 +127,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function changeDesc(t: Task, d: string) { patch(t.id, (x) => ({ ...x, description: d })); if (persists) start(() => { setDescription(t.id, d); }); }
   function changePri(t: Task, p: string) { patch(t.id, (x) => ({ ...x, priority: p })); if (persists) start(() => { setPriority(t.id, p); }); }
   function changeRepeat(t: Task, r: string) { patch(t.id, (x) => ({ ...x, repeat: r })); if (persists) start(() => { setRepeat(t.id, r); }); }
-  function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: primaryUser, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, primaryUser, text); }); }
+  function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: viewer, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, viewer, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
   function createTaskRaw(title: string, proj: string, whoName: string) {
@@ -158,7 +168,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <div className="side-h">PEOPLE</div>
           {data.people.filter((p) => TEAM_SET.has(p.name)).sort((a, b) => (personOpen.get(b.name) ?? 0) - (personOpen.get(a.name) ?? 0)).map((p) => (
             <div key={p.id} className={`side-item ${selPerson === p.name ? "on" : ""}`} onClick={() => goPerson(p.name)}>
-              <span className="nm">{p.name}{p.name === primaryUser ? " (me)" : ""}</span>
+              <span className="nm">{p.name}{p.name === viewer ? " (me)" : ""}</span>
               <span className="ct">{personOpen.get(p.name) ?? 0}</span>
             </div>
           ))}
@@ -170,8 +180,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <div className="side-item" onClick={() => goView("vendors")}><span className="nm">Vendors</span></div>
         </div>
         <div className="side-foot">
-          <div className="gcal"><span className="dot" style={{ background: "var(--sage)" }} /> Google Calendar</div>
-          <div className="gcal-sub">Connect later</div>
+          <div className="gcal"><span className="dot" style={{ background: "var(--sage)" }} /> {viewer}</div>
+          <div className="gcal-sub"><button className="clear" style={{ fontSize: 11, padding: 0 }} onClick={() => setShowPicker(true)}>switch user</button></div>
         </div>
       </aside>
 
@@ -443,6 +453,20 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
         </div>
       )}
       <button className="logdecision" onClick={() => goView("decisions")}>⚡ Log Decision</button>
+
+      {showPicker && (
+        <div className="overlay">
+          <div className="modal" style={{ maxWidth: 380, textAlign: "center" }}>
+            <h2 className="modal-title" style={{ width: "100%" }}>Who are you?</h2>
+            <p className="src" style={{ marginBottom: 14 }}>This sets your Messages, mentions, and &quot;me&quot; views on this device.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {TEAM.map((n) => (
+                <button key={n} className={n === viewer ? "btn-primary" : "tab"} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "10px" }} onClick={() => pickViewer(n)}>{n}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
