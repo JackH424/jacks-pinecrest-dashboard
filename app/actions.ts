@@ -180,6 +180,30 @@ export async function removeDep(taskId: string, blocksOn: string) {
   return { ok: true };
 }
 
+export async function acceptTriage(id: string, projectId: string, assigneeId: string, due: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const rows = (await sql`SELECT title, source_title, source_date, source_url FROM triage_items WHERE id=${id} AND status='pending'`) as
+    { title: string; source_title: string; source_date: string; source_url: string }[];
+  const it = rows[0];
+  if (!it) return { ok: false, error: "not pending" };
+  const tid = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  await sql`INSERT INTO tasks2 (id,project_id,title,status,priority,due,source_type,source_title,source_date,source_url)
+    VALUES (${tid},${projectId || "oneoff"},${it.title},'todo','normal',${due || ""},'meeting',${it.source_title},${it.source_date},${it.source_url})`;
+  if (assigneeId) await sql`INSERT INTO task_assignees (task_id,person_id) VALUES (${tid},${assigneeId}) ON CONFLICT DO NOTHING`;
+  await sql`UPDATE triage_items SET status='accepted' WHERE id=${id}`;
+  revalidatePath("/");
+  return { ok: true, taskId: tid };
+}
+
+export async function dismissTriage(id: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`UPDATE triage_items SET status='dismissed' WHERE id=${id}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function markRead(personId: string, commentIds: string[]) {
   const sql = getSql();
   if (!sql) return { ok: false, error: "no database" };

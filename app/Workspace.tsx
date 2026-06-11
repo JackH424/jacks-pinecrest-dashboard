@@ -1,16 +1,16 @@
 "use client";
 
 import { useMemo, useState, useTransition, useEffect } from "react";
-import type { Workspace as WS, Task, Comment, ChecklistItem, Dep } from "@/lib/data";
+import type { Workspace as WS, Task, Comment, ChecklistItem, Dep, TriageItem } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat, markRead, addChecklistItem, toggleChecklistItem, deleteChecklistItem, addDep, removeDep } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat, markRead, addChecklistItem, toggleChecklistItem, deleteChecklistItem, addDep, removeDep, acceptTriage, dismissTriage } from "./actions";
 
 const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 import AiChat from "./AiChat";
 
-type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "myday" | "workload" | "calendar" | "transcripts" | "decisions" | "vendors";
+type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "myday" | "workload" | "triage" | "calendar" | "transcripts" | "decisions" | "vendors";
 const STUBS: Record<string, string> = { transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 const TABLABEL: Record<string, string> = { dashboard: "Dashboard", calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 type SF = "open" | "all" | "done";
@@ -28,6 +28,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [comments, setComments] = useState<Comment[]>(data.comments);
   const [checklists, setChecklists] = useState<ChecklistItem[]>(data.checklists);
   const [deps, setDeps] = useState<Dep[]>(data.deps);
+  const [triage, setTriage] = useState<TriageItem[]>(data.triage);
   const [projOverride, setProjOverride] = useState<Record<string, string>>({});
   const [view, setView] = useState<View>("dashboard");
   const [selProj, setSelProj] = useState<string | null>(null);
@@ -204,6 +205,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <button className={`navlink ${view === "myday" ? "on" : ""}`} onClick={() => goView("myday")}>My Day</button>
           <button className={`navlink ${view === "tasks" ? "on" : ""}`} onClick={() => goView("tasks")}>All tasks</button>
           <button className={`navlink ${view === "workload" ? "on" : ""}`} onClick={() => goView("workload")}>Workload</button>
+          <button className={`navlink ${view === "triage" ? "on" : ""}`} onClick={() => goView("triage")}>Triage {triage.length ? <span className="ct unread-ct">{triage.length}</span> : null}</button>
           <button className={`navlink ${view === "messages" ? "on" : ""}`} onClick={() => goView("messages")}>Messages {unread.length ? <span className="ct unread-ct">{unread.length}</span> : null}</button>
         </nav>
         <div className="side-sec">
@@ -396,6 +398,26 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             </>
           );
         })()}
+
+        {view === "triage" && (
+          <>
+            <div className="page-h">Triage — action items from meetings</div>
+            {triage.length === 0 ? (
+              <div className="empty">No pending items. New Otter meetings are scanned daily — their action items land here for review. (Needs GITHUB_TOKEN in Vercel; see HANDOFF.md.)</div>
+            ) : (
+              <div className="msglist">
+                {triage.map((it) => (
+                  <TriageCard key={it.id} it={it} projects={data.projects.map((pp) => ({ id: pp.id, name: projName(pp.id) }))}
+                    onAccept={(pid, person, due) => {
+                      setTriage((ts) => ts.filter((x) => x.id !== it.id));
+                      if (persists) start(() => { acceptTriage(it.id, pid, idByName.get(person) || "", due); });
+                    }}
+                    onDismiss={() => { setTriage((ts) => ts.filter((x) => x.id !== it.id)); if (persists) start(() => { dismissTriage(it.id); }); }} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {view === "workload" && (() => {
           const max = Math.max(1, ...TEAM.map((n) => personOpen.get(n) ?? 0));
@@ -682,6 +704,37 @@ function Editable({ value, onSave, className }: { value: string; onSave: (v: str
     return (<input className={`edit-input ${className || ""}`} autoFocus value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { onSave(v); setEditing(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onSave(v); setEditing(false); } if (e.key === "Escape") setEditing(false); }} />);
   }
   return <span className={`editable ${className || ""}`} onClick={() => { setV(value); setEditing(true); }} title="click to edit">{value} <span className="pencil">✎</span></span>;
+}
+
+function TriageCard({ it, projects, onAccept, onDismiss }: {
+  it: TriageItem;
+  projects: { id: string; name: string }[];
+  onAccept: (projectId: string, person: string, due: string) => void;
+  onDismiss: () => void;
+}) {
+  const [pid, setPid] = useState(it.project_guess || "oneoff");
+  const [person, setPerson] = useState(it.assignee_guess || "");
+  const [due, setDue] = useState("");
+  return (
+    <div className="msg">
+      <div className="msg-b" style={{ fontWeight: 600 }}>{it.title}</div>
+      <div className="msg-h" style={{ margin: "4px 0 8px" }}>
+        from <a href={it.source_url} target="_blank" rel="noreferrer">{it.source_title}</a> · {it.source_date}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <select className="streamsel" value={pid} onChange={(e) => setPid(e.target.value)}>
+          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select className="streamsel" value={person} onChange={(e) => setPerson(e.target.value)}>
+          <option value="">Unassigned</option>
+          {TEAM.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <input type="date" className="dueinput" value={due} onChange={(e) => setDue(e.target.value)} />
+        <button className="btn-primary" style={{ padding: "6px 14px" }} onClick={() => onAccept(pid, person, due)}>✓ Accept</button>
+        <button className="clear" onClick={onDismiss}>Dismiss</button>
+      </div>
+    </div>
+  );
 }
 
 function AddInline({ placeholder, onAdd }: { placeholder: string; onAdd: (v: string) => void }) {

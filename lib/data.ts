@@ -27,7 +27,8 @@ export type Task = {
 export type Read = { person_id: string; comment_id: string };
 export type ChecklistItem = { id: string; task_id: string; text: string; done: boolean; pos: number };
 export type Dep = { task_id: string; blocks_on: string };
-export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[]; reads: Read[]; checklists: ChecklistItem[]; deps: Dep[] };
+export type TriageItem = { id: string; title: string; context: string; source_title: string; source_date: string; source_url: string; assignee_guess: string; project_guess: string; status: string };
+export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[]; reads: Read[]; checklists: ChecklistItem[]; deps: Dep[]; triage: TriageItem[] };
 
 let ready = false;
 
@@ -46,6 +47,11 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS repeat text DEFAULT ''`;
   await sql`CREATE TABLE IF NOT EXISTS checklist_items (id text PRIMARY KEY, task_id text NOT NULL, text text NOT NULL, done boolean DEFAULT false, pos int DEFAULT 0)`;
   await sql`CREATE TABLE IF NOT EXISTS task_deps (task_id text, blocks_on text, PRIMARY KEY (task_id, blocks_on))`;
+  await sql`CREATE TABLE IF NOT EXISTS triage_items (
+    id text PRIMARY KEY, title text NOT NULL, context text DEFAULT '',
+    source_title text DEFAULT '', source_date text DEFAULT '', source_url text DEFAULT '',
+    assignee_guess text DEFAULT '', project_guess text DEFAULT '',
+    status text DEFAULT 'pending', created_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS comment_reads (person_id text, comment_id text, read_at timestamptz DEFAULT now(), PRIMARY KEY (person_id, comment_id))`;
   await sql`CREATE TABLE IF NOT EXISTS comments (
     id text PRIMARY KEY, target_type text NOT NULL, target_id text NOT NULL,
@@ -96,7 +102,7 @@ function fallback(): Workspace {
   const people = (seedPeople as { id: string; name: string }[]).map((p) => ({
     ...p, open: tasks.filter((t) => t.assignees.includes(p.name) && t.status !== "done").length,
   }));
-  return { projects, people, tasks, comments: seedComments as Comment[], reads: [], checklists: [], deps: [] };
+  return { projects, people, tasks, comments: seedComments as Comment[], reads: [], checklists: [], deps: [], triage: [] };
 }
 
 export async function getWorkspace(): Promise<Workspace> {
@@ -127,7 +133,8 @@ export async function getWorkspace(): Promise<Workspace> {
     const reads = (await sql`SELECT person_id, comment_id FROM comment_reads`) as Read[];
     const checklists = (await sql`SELECT id, task_id, text, done, pos FROM checklist_items ORDER BY pos, id`) as ChecklistItem[];
     const deps = (await sql`SELECT task_id, blocks_on FROM task_deps`) as Dep[];
-    return { projects, people, tasks, comments, reads, checklists, deps };
+    const triage = (await sql`SELECT id,title,context,source_title,source_date,source_url,assignee_guess,project_guess,status FROM triage_items WHERE status='pending' ORDER BY source_date DESC, id`) as TriageItem[];
+    return { projects, people, tasks, comments, reads, checklists, deps, triage };
   } catch (err) {
     console.error("DB read failed, using seed fallback:", err);
     return fallback();
