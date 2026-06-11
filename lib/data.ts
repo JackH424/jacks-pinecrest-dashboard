@@ -21,7 +21,8 @@ export type Person = { id: string; name: string; open: number };
 export type Task = {
   id: string; project_id: string; title: string; status: string;
   priority: string; due: string; source_type: string; source_title: string;
-  source_date: string; source_url: string; description: string; repeat: string; assignees: string[];
+  source_date: string; source_url: string; description: string; repeat: string;
+  updated_at: string; assignees: string[];
 };
 export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[] };
 
@@ -77,7 +78,7 @@ function fallback(): Workspace {
   (seedAssignees as { task_id: string; person_id: string }[]).forEach((a) => {
     const arr = aByTask.get(a.task_id) ?? []; arr.push(id2name.get(a.person_id) ?? a.person_id); aByTask.set(a.task_id, arr);
   });
-  const tasks = (seedTasks as Record<string, unknown>[]).map((t) => ({ description: "", repeat: "", ...t, assignees: aByTask.get(t.id as string) ?? [] })) as unknown as Task[];
+  const tasks = (seedTasks as Record<string, unknown>[]).map((t) => ({ description: "", repeat: "", updated_at: "", ...t, assignees: aByTask.get(t.id as string) ?? [] })) as unknown as Task[];
   const membersByProj = new Map<string, string[]>();
   (seedMembers as { project_id: string; person_id: string }[]).forEach((m) => {
     const arr = membersByProj.get(m.project_id) ?? []; arr.push(id2name.get(m.person_id) ?? m.person_id); membersByProj.set(m.project_id, arr);
@@ -98,7 +99,7 @@ export async function getWorkspace(): Promise<Workspace> {
   try {
     await ensureReady(sql);
     const tasks = (await sql`
-      SELECT t.id,t.project_id,t.title,t.status,t.priority,t.due,t.source_type,t.source_title,t.source_date,t.source_url,COALESCE(t.description,'') AS description,COALESCE(t.repeat,'') AS repeat,
+      SELECT t.id,t.project_id,t.title,t.status,t.priority,t.due,t.source_type,t.source_title,t.source_date,t.source_url,COALESCE(t.description,'') AS description,COALESCE(t.repeat,'') AS repeat,COALESCE(to_char(t.updated_at,'YYYY-MM-DD'),'') AS updated_at,
         COALESCE(json_agg(p.name ORDER BY p.name) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS assignees
       FROM tasks2 t LEFT JOIN task_assignees ta ON ta.task_id=t.id LEFT JOIN people p ON p.id=ta.person_id
       GROUP BY t.id ORDER BY (t.status='done'), t.source_date DESC NULLS LAST`) as Task[];

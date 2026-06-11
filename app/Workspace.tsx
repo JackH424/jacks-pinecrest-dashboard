@@ -54,6 +54,14 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const projStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); tasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [tasks]);
   const personOpen = useMemo(() => { const m = new Map<string, number>(); tasks.forEach((t) => { if (t.status !== "done") t.assignees.forEach((a) => m.set(a, (m.get(a) ?? 0) + 1)); }); return m; }, [tasks]);
   const dashTasks = useMemo(() => peopleFilter.length === 0 ? tasks : tasks.filter((t) => t.assignees.some((a) => peopleFilter.includes(a))), [tasks, peopleFilter]);
+  const staleTasks = useMemo(() => {
+    const cutoff = Date.now() - 10 * 864e5;
+    return dashTasks
+      .filter((t) => t.status !== "done" && t.updated_at && new Date(t.updated_at + "T00:00:00Z").getTime() < cutoff)
+      .map((t) => ({ t, days: Math.floor((Date.now() - new Date(t.updated_at + "T00:00:00Z").getTime()) / 864e5) }))
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 7);
+  }, [dashTasks]);
   const counts = useMemo(() => ({ open: dashTasks.filter((t) => t.status !== "done").length, inprog: dashTasks.filter((t) => t.status === "in_progress").length, blocked: dashTasks.filter((t) => t.status === "blocked").length, done: dashTasks.filter((t) => t.status === "done").length }), [dashTasks]);
   const dashProjStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); dashTasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [dashTasks]);
   const commentsFor = (type: string, id: string) => comments.filter((c) => c.target_type === type && c.target_id === id).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
@@ -114,7 +122,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
   function createTaskRaw(title: string, proj: string, whoName: string) {
     const id = "tmp" + Math.random().toString(36).slice(2);
-    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", repeat: "", assignees: whoName ? [whoName] : [] }, ...ts]);
+    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", repeat: "", updated_at: new Date().toISOString().slice(0, 10), assignees: whoName ? [whoName] : [] }, ...ts]);
     if (persists) start(() => { addTask(title, proj, whoName ? [idByName.get(whoName) || ""] : []); });
   }
   function submitForm() { const t = ntTitle.trim(); if (!t) return; createTaskRaw(t, selProj || ONEOFF_ID, ntWho); setNtTitle(""); setNtWho(""); setAdding(false); }
@@ -195,6 +203,17 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               ))}
             </div>
             <AiChat />
+            {staleTasks.length > 0 && (
+              <div className="stale-panel">
+                <div className="stale-h">≡ HASN&apos;T MOVED</div>
+                {staleTasks.map(({ t, days }) => (
+                  <div key={t.id} className="stale-row" onClick={() => setOpenTaskId(t.id)}>
+                    <span className="stale-title">{t.title}</span>
+                    <span className="stale-meta">{projName(t.project_id)} · {days}d</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="stats">
               <div className="stat"><div className="n s-open">{counts.open}</div><div className="l">Open</div></div>
               <div className="stat"><div className="n s-prog">{counts.inprog}</div><div className="l">In progress</div></div>

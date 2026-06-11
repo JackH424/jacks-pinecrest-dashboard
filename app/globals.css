@@ -177,6 +177,13 @@ button { font: inherit; }
 .stk-done { color: #1f6b40; background: #e6f3ea; border-color: #c7e3d1; }
 .oneoff-tag { display: inline-block; background: #efe9f7; color: var(--plum); border: 1px solid #ddd0ee; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
 
+/* Stale panel */
+.stale-panel { background: #f3ece1; border: 1px solid #e6dcc8; border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; }
+.stale-h { font-size: 11px; letter-spacing: .07em; color: #8a7a5c; font-weight: 700; margin-bottom: 8px; }
+.stale-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #e9e0cf; cursor: pointer; font-size: 13px; }
+.stale-row:hover .stale-title { color: var(--sage); }
+.stale-meta { color: var(--lo); font-size: 12px; white-space: nowrap; }
+
 .repeat-tag { display: inline-block; background: #e7f0fa; color: #1f5a93; border: 1px solid #cfe0f2; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
 
 /* Priority */

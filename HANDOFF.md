@@ -73,7 +73,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       selector on card+modal, sort, red URGENT accent. Action: setPriority.
 - [x] 2. **Recurring tasks** — col `repeat` text ('','daily','weekly','monthly');
       completing a repeating task spawns next instance w/ advanced due. Modal selector.
-- [ ] 3. **"Hasn't moved" stale panel** — dashboard section listing open tasks with
+- [x] 3. **"Hasn't moved" stale panel** — dashboard section listing open tasks with
       `updated_at` > 10 days, w/ project chip + days count (like Kayla's).
 - [ ] 4. **Identity picker (login-lite)** — "Who are you?" dropdown of the 6, stored
       localStorage; replaces hardcoded primaryUser for "(me)", Messages, My Day,
