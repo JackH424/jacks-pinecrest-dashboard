@@ -89,7 +89,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
 - [x] 9. **Calendar view** — month grid of tasks by due date (topbar Calendar tab).
 - [x] 10. **My Day** — personal view for viewer: overdue + due today/this week +
       urgent, sorted. Sidebar nav item.
-- [ ] 11. **Workload view** — per-person open counts by status/priority bars (People area).
+- [x] 11. **Workload view** — per-person open counts by status/priority bars (People area).
 - [ ] 12. **OTTER TRIAGE INBOX (high value!)** — pipe KB meeting action items into a
       review queue: table triage_items(id,title,context,source_title,source_date,
       source_url,assignee_guess,project_guess,status['pending'|'accepted'|'dismissed']).

@@ -177,6 +177,19 @@ button { font: inherit; }
 .stk-done { color: #1f6b40; background: #e6f3ea; border-color: #c7e3d1; }
 .oneoff-tag { display: inline-block; background: #efe9f7; color: var(--plum); border: 1px solid #ddd0ee; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
 
+/* Workload */
+.workload { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 16px; max-width: 760px; }
+.wl-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; cursor: pointer; }
+.wl-row:hover .wl-name { color: var(--sage); }
+.wl-name { width: 180px; font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.wl-urgent { background: var(--red); color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; }
+.wl-bar { flex: 1; height: 14px; background: var(--surf2); border-radius: 7px; overflow: hidden; display: flex; }
+.wl-bar span { display: block; height: 100%; }
+.wl-n { width: 30px; text-align: right; font-weight: 700; font-size: 13px; }
+.wl-legend { display: flex; gap: 14px; margin-top: 12px; color: var(--lo); font-size: 12px; }
+.wl-legend .chip { display: inline-flex; align-items: center; gap: 5px; }
+.wl-legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+
 /* Calendar */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .cal-dow { color: var(--lo); font-size: 11px; font-weight: 700; text-align: center; padding: 4px 0; }

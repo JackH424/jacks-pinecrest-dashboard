@@ -10,7 +10,7 @@ const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 import AiChat from "./AiChat";
 
-type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "myday" | "calendar" | "transcripts" | "decisions" | "vendors";
+type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "myday" | "workload" | "calendar" | "transcripts" | "decisions" | "vendors";
 const STUBS: Record<string, string> = { transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 const TABLABEL: Record<string, string> = { dashboard: "Dashboard", calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 type SF = "open" | "all" | "done";
@@ -203,6 +203,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <button className={`navlink ${view === "dashboard" ? "on" : ""}`} onClick={() => goView("dashboard")}>Dashboard</button>
           <button className={`navlink ${view === "myday" ? "on" : ""}`} onClick={() => goView("myday")}>My Day</button>
           <button className={`navlink ${view === "tasks" ? "on" : ""}`} onClick={() => goView("tasks")}>All tasks</button>
+          <button className={`navlink ${view === "workload" ? "on" : ""}`} onClick={() => goView("workload")}>Workload</button>
           <button className={`navlink ${view === "messages" ? "on" : ""}`} onClick={() => goView("messages")}>Messages {unread.length ? <span className="ct unread-ct">{unread.length}</span> : null}</button>
         </nav>
         <div className="side-sec">
@@ -391,6 +392,39 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                     </>}
                   </div>
                 ))}
+              </div>
+            </>
+          );
+        })()}
+
+        {view === "workload" && (() => {
+          const max = Math.max(1, ...TEAM.map((n) => personOpen.get(n) ?? 0));
+          return (
+            <>
+              <div className="page-h">Workload</div>
+              <div className="workload">
+                {TEAM.map((n) => {
+                  const mine = tasks.filter((t) => t.assignees.includes(n) && t.status !== "done");
+                  const seg = (st: string) => mine.filter((t) => t.status === st).length;
+                  const urgent = mine.filter((t) => t.priority === "urgent").length;
+                  return (
+                    <div key={n} className="wl-row" onClick={() => goPerson(n)}>
+                      <span className="wl-name">{n}{urgent > 0 && <span className="wl-urgent">{urgent} urgent</span>}</span>
+                      <div className="wl-bar">
+                        {STATUSES.filter((st) => st.id !== "done").map((st) => {
+                          const w = (seg(st.id) / max) * 100;
+                          return w > 0 ? <span key={st.id} style={{ width: `${w}%`, background: st.color }} title={`${st.label}: ${seg(st.id)}`} /> : null;
+                        })}
+                      </div>
+                      <span className="wl-n">{mine.length}</span>
+                    </div>
+                  );
+                })}
+                <div className="wl-legend">
+                  {STATUSES.filter((st) => st.id !== "done").map((st) => (
+                    <span key={st.id} className="chip"><span className="dot" style={{ background: st.color }} /> {st.label}</span>
+                  ))}
+                </div>
               </div>
             </>
           );
