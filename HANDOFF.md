@@ -69,7 +69,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
 - User is non-technical: give click-by-click instructions, verify outcomes yourself.
 
 ## APPROVED FEATURE QUEUE (build in this order; tick when shipped)
-- [ ] 1. **Priority levels** — UI for existing priority col (urgent/high/normal/low),
+- [x] 1. **Priority levels** — UI for existing priority col (urgent/high/normal/low),
       selector on card+modal, sort, red URGENT accent. Action: setPriority.
 - [ ] 2. **Recurring tasks** — col `repeat` text ('','daily','weekly','monthly');
       completing a repeating task spawns next instance w/ advanced due. Modal selector.

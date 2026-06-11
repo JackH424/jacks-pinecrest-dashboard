@@ -4,7 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority } from "./actions";
+
+const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
+const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 import AiChat from "./AiChat";
 
 type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
@@ -30,7 +33,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [q, setQ] = useState("");
   const [sf, setSf] = useState<SF>("open");
   const [assignee, setAssignee] = useState("");
-  const [sortBy, setSortBy] = useState<"none" | "project" | "status">("none");
+  const [sortBy, setSortBy] = useState<"none" | "project" | "status" | "priority">("none");
   const [personMode, setPersonMode] = useState<"project" | "task">("project");
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
@@ -80,6 +83,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     if (sortBy === "none") return rows;
     const r = [...rows];
     if (sortBy === "project") r.sort((a, b) => projName(a.project_id).localeCompare(projName(b.project_id)));
+    else if (sortBy === "priority") r.sort((a, b) => (PRI_ORDER[a.priority] ?? 2) - (PRI_ORDER[b.priority] ?? 2));
     else r.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
     return r;
   }, [rows, sortBy, projOverride]);
@@ -98,6 +102,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function move(t: Task, pid: string) { patch(t.id, (x) => ({ ...x, project_id: pid })); if (persists) start(() => { moveTask(t.id, pid); }); }
   function changeDue(t: Task, due: string) { patch(t.id, (x) => ({ ...x, due })); if (persists) start(() => { setDue(t.id, due); }); }
   function changeDesc(t: Task, d: string) { patch(t.id, (x) => ({ ...x, description: d })); if (persists) start(() => { setDescription(t.id, d); }); }
+  function changePri(t: Task, p: string) { patch(t.id, (x) => ({ ...x, priority: p })); if (persists) start(() => { setPriority(t.id, p); }); }
   function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: primaryUser, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, primaryUser, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
@@ -278,10 +283,11 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 </select>
               )}
               {(view === "tasks" || (view === "person" && personMode === "task")) && (
-                <select className="streamsel" value={sortBy} onChange={(e) => setSortBy(e.target.value as "none" | "project" | "status")}>
+                <select className="streamsel" value={sortBy} onChange={(e) => setSortBy(e.target.value as "none" | "project" | "status" | "priority")}>
                   <option value="none">Sort: default</option>
                   <option value="project">Sort: project</option>
                   <option value="status">Sort: status</option>
+                  <option value="priority">Sort: priority</option>
                 </select>
               )}
               <select className="streamsel" value={dueFilter} onChange={(e) => setDueFilter(e.target.value as "any" | "overdue" | "week" | "month")} title="Due">
@@ -329,11 +335,16 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             {sortedRows.length === 0 ? <div className="empty">No tasks match.</div> : (
               <div className="tasklist">
                 {sortedRows.slice(0, 300).map((t) => (
-                  <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""} ${dueClass(t.due)}`}>
+                  <div key={t.id} className={`tcard ${t.status === "done" ? "done" : ""} ${dueClass(t.due)} ${t.priority === "urgent" ? "pri-urgent" : ""}`}>
                     <div className="tcard-top">
+                      <span style={{ display: "flex", gap: 6 }}>
                       <select className={`stk stk-${t.status}`} value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
                         {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                       </select>
+                      <select className={`pri pri-${t.priority}`} value={PRI_ORDER[t.priority] !== undefined ? t.priority : "normal"} onChange={(e) => changePri(t, e.target.value)} title="Priority">
+                        {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                      </span>
                       {view === "tasks" ? (
                         <select className="proj-pick" value={t.project_id} onChange={(e) => move(t, e.target.value)} title="Project">
                           {data.projects.map((p) => <option key={p.id} value={p.id}>{projName(p.id)}</option>)}
@@ -377,9 +388,14 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
         <div className="overlay" onClick={() => setOpenTaskId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-h">
-              <select className={`stk stk-${openTask.status}`} value={openTask.status} onChange={(e) => changeStatus(openTask, e.target.value)}>
-                {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
+              <span style={{ display: "flex", gap: 6 }}>
+                <select className={`stk stk-${openTask.status}`} value={openTask.status} onChange={(e) => changeStatus(openTask, e.target.value)}>
+                  {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <select className={`pri pri-${openTask.priority}`} value={PRI_ORDER[openTask.priority] !== undefined ? openTask.priority : "normal"} onChange={(e) => changePri(openTask, e.target.value)} title="Priority">
+                  {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </span>
               <button className="clear" onClick={() => setOpenTaskId(null)}>✕</button>
             </div>
             <Editable className="modal-title" value={openTask.title} onSave={(n) => retitle(openTask, n)} />

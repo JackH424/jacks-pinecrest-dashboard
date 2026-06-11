@@ -177,6 +177,13 @@ button { font: inherit; }
 .stk-done { color: #1f6b40; background: #e6f3ea; border-color: #c7e3d1; }
 .oneoff-tag { display: inline-block; background: #efe9f7; color: var(--plum); border: 1px solid #ddd0ee; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
 
+/* Priority */
+.pri { border: 1px solid var(--border); border-radius: 14px; padding: 3px 8px; font-size: 11px; font-weight: 700; cursor: pointer; appearance: none; -webkit-appearance: none; background: var(--surf2); color: var(--lo); }
+.pri.pri-urgent { color: #fff; background: var(--red); border-color: var(--red); }
+.pri.pri-high { color: #97331f; background: #fbe7e2; border-color: #f1cabf; }
+.pri.pri-low { color: var(--lo); background: var(--surf); }
+.tcard.pri-urgent { border-left: 4px solid var(--red); background: var(--surf); }
+
 /* Assignee chips */
 .chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .who { background: var(--sage-soft); color: var(--sage); border: 1px solid #d7e2cd; border-radius: 14px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
