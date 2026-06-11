@@ -71,7 +71,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
 ## APPROVED FEATURE QUEUE (build in this order; tick when shipped)
 - [x] 1. **Priority levels** — UI for existing priority col (urgent/high/normal/low),
       selector on card+modal, sort, red URGENT accent. Action: setPriority.
-- [ ] 2. **Recurring tasks** — col `repeat` text ('','daily','weekly','monthly');
+- [x] 2. **Recurring tasks** — col `repeat` text ('','daily','weekly','monthly');
       completing a repeating task spawns next instance w/ advanced due. Modal selector.
 - [ ] 3. **"Hasn't moved" stale panel** — dashboard section listing open tasks with
       `updated_at` > 10 days, w/ project chip + days count (like Kayla's).

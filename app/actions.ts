@@ -6,11 +6,42 @@ import { revalidatePath } from "next/cache";
 
 const STATUSES = new Set(STATUS_IDS);
 
+function nextDue(due: string, repeat: string): string {
+  const base = due && /^\d{4}-\d{2}-\d{2}$/.test(due) ? new Date(due + "T00:00:00Z") : new Date();
+  if (repeat === "daily") base.setUTCDate(base.getUTCDate() + 1);
+  else if (repeat === "weekly") base.setUTCDate(base.getUTCDate() + 7);
+  else if (repeat === "monthly") base.setUTCMonth(base.getUTCMonth() + 1);
+  return base.toISOString().slice(0, 10);
+}
+
 export async function setStatus(taskId: string, status: string) {
   if (!STATUSES.has(status)) return { ok: false };
   const sql = getSql();
   if (!sql) return { ok: false, error: "no database" };
   await sql`UPDATE tasks2 SET status = ${status}, updated_at = now() WHERE id = ${taskId}`;
+  // Recurring: completing a repeating task spawns the next instance.
+  if (status === "done") {
+    const rows = (await sql`SELECT project_id,title,priority,due,description,COALESCE(repeat,'') AS repeat FROM tasks2 WHERE id = ${taskId}`) as
+      { project_id: string; title: string; priority: string; due: string; description: string; repeat: string }[];
+    const t = rows[0];
+    if (t && ["daily", "weekly", "monthly"].includes(t.repeat)) {
+      const id = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      await sql`INSERT INTO tasks2 (id,project_id,title,status,priority,due,source_type,description,repeat)
+        VALUES (${id},${t.project_id},${t.title},'todo',${t.priority},${nextDue(t.due, t.repeat)},'recurring',${t.description},${t.repeat})`;
+      await sql`INSERT INTO task_assignees (task_id,person_id) SELECT ${id},person_id FROM task_assignees WHERE task_id=${taskId} ON CONFLICT DO NOTHING`;
+      await sql`UPDATE tasks2 SET repeat='' WHERE id=${taskId}`;
+    }
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+const REPEATS = new Set(["", "daily", "weekly", "monthly"]);
+export async function setRepeat(taskId: string, repeat: string) {
+  if (!REPEATS.has(repeat)) return { ok: false };
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`UPDATE tasks2 SET repeat = ${repeat}, updated_at = now() WHERE id = ${taskId}`;
   revalidatePath("/");
   return { ok: true };
 }

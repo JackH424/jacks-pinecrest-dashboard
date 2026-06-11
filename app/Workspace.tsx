@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat } from "./actions";
 
 const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -95,7 +95,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   }, [rows, view, projOverride]);
 
   function patch(id: string, fn: (t: Task) => Task) { setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
-  function changeStatus(t: Task, status: string) { patch(t.id, (x) => ({ ...x, status })); if (persists) start(() => { setStatus(t.id, status); }); }
+  function changeStatus(t: Task, status: string) {
+    patch(t.id, (x) => ({ ...x, status }));
+    if (persists) start(() => { setStatus(t.id, status); });
+    // Completing a repeating task spawns its next instance server-side — reload to show it.
+    if (status === "done" && ["daily", "weekly", "monthly"].includes(t.repeat)) setTimeout(() => window.location.reload(), 700);
+  }
   function toggleDone(t: Task) { changeStatus(t, t.status === "done" ? "todo" : "done"); }
   function addA(t: Task, n: string) { if (!n || t.assignees.includes(n)) return; const pid = idByName.get(n); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: [...x.assignees, n].sort() })); if (persists) start(() => { toggleAssignee(t.id, pid, true); }); }
   function rmA(t: Task, n: string) { const pid = idByName.get(n); if (!pid) return; patch(t.id, (x) => ({ ...x, assignees: x.assignees.filter((a) => a !== n) })); if (persists) start(() => { toggleAssignee(t.id, pid, false); }); }
@@ -103,12 +108,13 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function changeDue(t: Task, due: string) { patch(t.id, (x) => ({ ...x, due })); if (persists) start(() => { setDue(t.id, due); }); }
   function changeDesc(t: Task, d: string) { patch(t.id, (x) => ({ ...x, description: d })); if (persists) start(() => { setDescription(t.id, d); }); }
   function changePri(t: Task, p: string) { patch(t.id, (x) => ({ ...x, priority: p })); if (persists) start(() => { setPriority(t.id, p); }); }
+  function changeRepeat(t: Task, r: string) { patch(t.id, (x) => ({ ...x, repeat: r })); if (persists) start(() => { setRepeat(t.id, r); }); }
   function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: primaryUser, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, primaryUser, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
   function createTaskRaw(title: string, proj: string, whoName: string) {
     const id = "tmp" + Math.random().toString(36).slice(2);
-    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", assignees: whoName ? [whoName] : [] }, ...ts]);
+    setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", repeat: "", assignees: whoName ? [whoName] : [] }, ...ts]);
     if (persists) start(() => { addTask(title, proj, whoName ? [idByName.get(whoName) || ""] : []); });
   }
   function submitForm() { const t = ntTitle.trim(); if (!t) return; createTaskRaw(t, selProj || ONEOFF_ID, ntWho); setNtTitle(""); setNtWho(""); setAdding(false); }
@@ -353,7 +359,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                         <span className="proj-chip" onClick={() => goProject(t.project_id)} title="Open project">{projName(t.project_id)}</span>
                       ) : null}
                     </div>
-                    <div className="tcard-title">{t.project_id === ONEOFF_ID && <span className="oneoff-tag">one-off</span>}{t.title}</div>
+                    <div className="tcard-title">{t.project_id === ONEOFF_ID && <span className="oneoff-tag">one-off</span>}{t.repeat && <span className="repeat-tag" title={`repeats ${t.repeat}`}>↻ {t.repeat}</span>}{t.title}</div>
                     <div className="chips">
                       {t.assignees.map((a) => <span key={a} className="who" onClick={() => rmA(t, a)} title="remove">{a} ×</span>)}
                       <select className="streamsel" value="" onChange={(e) => { addA(t, e.target.value); e.currentTarget.value = ""; }}>
@@ -399,7 +405,12 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               <button className="clear" onClick={() => setOpenTaskId(null)}>✕</button>
             </div>
             <Editable className="modal-title" value={openTask.title} onSave={(n) => retitle(openTask, n)} />
-            <div className="src" style={{ marginBottom: 10 }}>Project: {projName(openTask.project_id)} · Due: <input type="date" className={`dueinput ${dueClass(openTask.due)}`} value={openTask.due || ""} onChange={(e) => changeDue(openTask, e.target.value)} /></div>
+            <div className="src" style={{ marginBottom: 10 }}>
+              Project: {projName(openTask.project_id)} · Due: <input type="date" className={`dueinput ${dueClass(openTask.due)}`} value={openTask.due || ""} onChange={(e) => changeDue(openTask, e.target.value)} />
+              {" "}· Repeats: <select className="streamsel" style={{ padding: "2px 6px", fontSize: 12 }} value={openTask.repeat || ""} onChange={(e) => changeRepeat(openTask, e.target.value)}>
+                <option value="">never</option><option value="daily">daily</option><option value="weekly">weekly</option><option value="monthly">monthly</option>
+              </select>
+            </div>
             <div className="chips" style={{ marginBottom: 10 }}>
               {openTask.assignees.map((a) => <span key={a} className="who" onClick={() => rmA(openTask, a)}>{a} ×</span>)}
               <select className="streamsel" value="" onChange={(e) => { addA(openTask, e.target.value); e.currentTarget.value = ""; }}>
