@@ -86,8 +86,8 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       editable list in task modal; card shows 2/5 progress.
 - [x] 8. **Task dependencies** — table task_deps(task_id,blocks_on);
       modal "blocked by" picker; auto-status Blocked while any dep open; show link.
-- [ ] 9. **Calendar view** — month grid of tasks by due date (topbar Calendar tab).
-- [ ] 10. **My Day** — personal view for viewer: overdue + due today/this week +
+- [x] 9. **Calendar view** — month grid of tasks by due date (topbar Calendar tab).
+- [x] 10. **My Day** — personal view for viewer: overdue + due today/this week +
       urgent, sorted. Sidebar nav item.
 - [ ] 11. **Workload view** — per-person open counts by status/priority bars (People area).
 - [ ] 12. **OTTER TRIAGE INBOX (high value!)** — pipe KB meeting action items into a

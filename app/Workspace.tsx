@@ -10,8 +10,9 @@ const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 import AiChat from "./AiChat";
 
-type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "calendar" | "transcripts" | "decisions" | "vendors";
-const STUBS: Record<string, string> = { calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
+type View = "dashboard" | "project" | "person" | "tasks" | "messages" | "myday" | "calendar" | "transcripts" | "decisions" | "vendors";
+const STUBS: Record<string, string> = { transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
+const TABLABEL: Record<string, string> = { dashboard: "Dashboard", calendar: "Calendar", transcripts: "Transcripts", decisions: "Decision Log", vendors: "Vendors" };
 type SF = "open" | "all" | "done";
 const PCOLORS = ["#c2702f", "#2f8f87", "#3a4a78", "#7a4a78", "#5c7a4a", "#a8852f", "#b3422f", "#2f6fb0", "#6b3fa0", "#2f7a4a"];
 
@@ -38,6 +39,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [sortBy, setSortBy] = useState<"none" | "project" | "status" | "priority">("none");
   const [personMode, setPersonMode] = useState<"project" | "task">("project");
   const [layout, setLayout] = useState<"cards" | "board">("cards");
+  const [calBase, setCalBase] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
@@ -199,6 +201,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
         <div className="side-h">OVERVIEW</div>
         <nav className="sidenav">
           <button className={`navlink ${view === "dashboard" ? "on" : ""}`} onClick={() => goView("dashboard")}>Dashboard</button>
+          <button className={`navlink ${view === "myday" ? "on" : ""}`} onClick={() => goView("myday")}>My Day</button>
           <button className={`navlink ${view === "tasks" ? "on" : ""}`} onClick={() => goView("tasks")}>All tasks</button>
           <button className={`navlink ${view === "messages" ? "on" : ""}`} onClick={() => goView("messages")}>Messages {unread.length ? <span className="ct unread-ct">{unread.length}</span> : null}</button>
         </nav>
@@ -238,7 +241,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
           <input className="topsearch" placeholder="Search everything…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) goView("tasks"); }} />
           <nav className="tabs">
             {(["dashboard", "calendar", "transcripts", "decisions", "vendors"] as View[]).map((v) => (
-              <button key={v} className={`tab ${view === v ? "on" : ""}`} onClick={() => goView(v)}>{v === "dashboard" ? "Dashboard" : STUBS[v]}</button>
+              <button key={v} className={`tab ${view === v ? "on" : ""}`} onClick={() => goView(v)}>{TABLABEL[v]}</button>
             ))}
           </nav>
         </div>
@@ -328,6 +331,70 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             </div>
           </>
         )}
+
+        {view === "myday" && (() => {
+          const mine = tasks.filter((t) => t.assignees.includes(viewer) && t.status !== "done");
+          const secs: [string, Task[]][] = [
+            ["Overdue", mine.filter((t) => t.due && t.due < today)],
+            ["Due today", mine.filter((t) => t.due === today)],
+            ["Due this week", mine.filter((t) => t.due && t.due > today && t.due <= weekAhead)],
+            ["Urgent (no date)", mine.filter((t) => t.priority === "urgent" && (!t.due || t.due > weekAhead))],
+          ];
+          const Row = ({ t }: { t: Task }) => (
+            <div className="stale-row" onClick={() => setOpenTaskId(t.id)}>
+              <span className="stale-title">{t.title}</span>
+              <span className="stale-meta">{projName(t.project_id)}{t.due ? ` · ${t.due}` : ""}</span>
+            </div>
+          );
+          return (
+            <>
+              <div className="page-h">My Day — {viewer.split(" ")[0]}</div>
+              {secs.every(([, l]) => l.length === 0) && <div className="empty">Nothing urgent, due, or overdue. 🎉</div>}
+              {secs.map(([h, list]) => list.length > 0 && (
+                <div key={h} className="myday-sec">
+                  <div className="desc-l">{h} ({list.length})</div>
+                  {list.map((t) => <Row key={t.id} t={t} />)}
+                </div>
+              ))}
+            </>
+          );
+        })()}
+
+        {view === "calendar" && (() => {
+          const { y, m } = calBase;
+          const first = new Date(Date.UTC(y, m, 1));
+          const startDow = first.getUTCDay();
+          const daysIn = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+          const cells: (string | null)[] = [
+            ...Array.from({ length: startDow }, () => null),
+            ...Array.from({ length: daysIn }, (_, i) => `${y}-${String(m + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`),
+          ];
+          const byDay = new Map<string, Task[]>();
+          tasks.forEach((t) => { if (t.due && t.status !== "done") { const a = byDay.get(t.due) ?? []; a.push(t); byDay.set(t.due, a); } });
+          const monthName = first.toLocaleString("en-US", { month: "long", timeZone: "UTC" });
+          return (
+            <>
+              <div className="page-h" style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
+                <button className="clear" onClick={() => setCalBase(({ y: yy, m: mm }) => mm === 0 ? { y: yy - 1, m: 11 } : { y: yy, m: mm - 1 })}>←</button>
+                {monthName} {y}
+                <button className="clear" onClick={() => setCalBase(({ y: yy, m: mm }) => mm === 11 ? { y: yy + 1, m: 0 } : { y: yy, m: mm + 1 })}>→</button>
+              </div>
+              <div className="cal-grid">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="cal-dow">{d}</div>)}
+                {cells.map((d, i) => (
+                  <div key={i} className={`cal-cell ${d === today ? "cal-today" : ""}`}>
+                    {d && <><div className="cal-n">{Number(d.slice(8))}</div>
+                      {(byDay.get(d) ?? []).slice(0, 4).map((t) => (
+                        <div key={t.id} className={`cal-task ${d < today ? "overdue-t" : ""}`} onClick={() => setOpenTaskId(t.id)} title={t.title}>{t.title}</div>
+                      ))}
+                      {(byDay.get(d) ?? []).length > 4 && <div className="cal-more">+{(byDay.get(d) ?? []).length - 4}</div>}
+                    </>}
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
 
         {(view === "project" || view === "person" || view === "tasks") && (
           <>
