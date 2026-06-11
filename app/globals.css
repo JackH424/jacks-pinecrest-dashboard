@@ -177,6 +177,17 @@ button { font: inherit; }
 .stk-done { color: #1f6b40; background: #e6f3ea; border-color: #c7e3d1; }
 .oneoff-tag { display: inline-block; background: #efe9f7; color: var(--plum); border: 1px solid #ddd0ee; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: middle; }
 
+/* Kanban board */
+.board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-items: start; }
+.bcol { background: var(--surf2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-height: 120px; }
+.bcol-h { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.bcol-h .ct { background: var(--surf); border: 1px solid var(--border); color: var(--lo); border-radius: 10px; font-size: 11px; padding: 0 7px; }
+.bcard { background: var(--surf); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; cursor: grab; }
+.bcard:hover { border-color: var(--sage); }
+.bcard-t { font-size: 13px; font-weight: 600; }
+.bcard-m { font-size: 11px; color: var(--lo); margin-top: 3px; }
+@media (max-width: 1000px) { .board { grid-template-columns: repeat(2, 1fr); } }
+
 /* Stale panel */
 .stale-panel { background: #f3ece1; border: 1px solid #e6dcc8; border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; }
 .stale-h { font-size: 11px; letter-spacing: .07em; color: #8a7a5c; font-weight: 700; margin-bottom: 8px; }

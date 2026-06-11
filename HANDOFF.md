@@ -80,7 +80,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       Telegram mapping. (Real Clerk auth = later A3, Jack deferred.)
 - [x] 5. **Unread state** — table comment_reads(person_id,comment_id,read_at);
       Messages tab badge = unread mentions for viewer; mark-read on open.
-- [ ] 6. **Kanban board** — view grouping open tasks by status columns,
+- [x] 6. **Kanban board** — view grouping open tasks by status columns,
       HTML5 drag-drop between columns → setStatus.
 - [ ] 7. **Subtask checklists** — table checklist_items(id,task_id,text,done,pos);
       editable list in task modal; card shows 2/5 progress.

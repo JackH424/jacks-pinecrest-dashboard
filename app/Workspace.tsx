@@ -35,6 +35,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [assignee, setAssignee] = useState("");
   const [sortBy, setSortBy] = useState<"none" | "project" | "status" | "priority">("none");
   const [personMode, setPersonMode] = useState<"project" | "task">("project");
+  const [layout, setLayout] = useState<"cards" | "board">("cards");
   const [adding, setAdding] = useState(false);
   const [ntTitle, setNtTitle] = useState("");
   const [ntWho, setNtWho] = useState("");
@@ -104,6 +105,17 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
       return true;
     });
   }, [tasks, view, selProj, selPerson, assignee, sf, q, dueFilter, today, weekAhead, monthAhead]);
+
+  const boardRows = useMemo(() => {
+    const ql = q.toLowerCase();
+    return tasks.filter((t) => {
+      if (view === "project" && selProj && t.project_id !== selProj) return false;
+      if (view === "person" && selPerson && !t.assignees.includes(selPerson)) return false;
+      if (assignee && !t.assignees.includes(assignee)) return false;
+      if (ql && !(t.title.toLowerCase().includes(ql) || t.source_title.toLowerCase().includes(ql))) return false;
+      return true;
+    });
+  }, [tasks, view, selProj, selPerson, assignee, q]);
 
   const STATUS_ORDER: Record<string, number> = { todo: 0, in_progress: 1, waiting: 2, blocked: 3, done: 4 };
   const sortedRows = useMemo(() => {
@@ -320,6 +332,10 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                 <button className={sf === "all" ? "on" : ""} onClick={() => setSf("all")}>All</button>
                 <button className={sf === "done" ? "on" : ""} onClick={() => setSf("done")}>Done</button>
               </div>
+              <div className="statustabs">
+                <button className={layout === "cards" ? "on" : ""} onClick={() => setLayout("cards")}>Cards</button>
+                <button className={layout === "board" ? "on" : ""} onClick={() => setLayout("board")}>Board</button>
+              </div>
               {view === "tasks" && (
                 <select className="streamsel" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
                   <option value="">Anyone</option>
@@ -375,6 +391,27 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                   ))}
                 </div>
               )
+            ) : layout === "board" ? (
+              <div className="board">
+                {STATUSES.map((st) => {
+                  const items = boardRows.filter((t) => t.status === st.id);
+                  return (
+                    <div key={st.id} className="bcol"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { const id = e.dataTransfer.getData("text/task"); const t = tasks.find((x) => x.id === id); if (t && t.status !== st.id) changeStatus(t, st.id); }}>
+                      <div className="bcol-h" style={{ color: st.color }}>{st.label} <span className="ct">{items.length}</span></div>
+                      {items.slice(0, 60).map((t) => (
+                        <div key={t.id} className="bcard" draggable
+                          onDragStart={(e) => e.dataTransfer.setData("text/task", t.id)}
+                          onClick={() => setOpenTaskId(t.id)}>
+                          <div className="bcard-t">{t.priority === "urgent" && <span className="pri pri-urgent" style={{ padding: "0 6px", marginRight: 4 }}>!</span>}{t.title}</div>
+                          <div className="bcard-m">{view !== "project" ? projName(t.project_id) : ""}{t.assignees.length ? ` · ${t.assignees.map((a) => a.split(" ")[0]).join(", ")}` : ""}{t.due ? ` · ${t.due}` : ""}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (<>
             {sortedRows.length === 0 ? <div className="empty">No tasks match.</div> : (
               <div className="tasklist">
