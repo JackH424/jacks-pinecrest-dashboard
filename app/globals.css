@@ -215,6 +215,8 @@ button { font: inherit; }
 .msglist { display: flex; flex-direction: column; gap: 10px; }
 .msg { background: var(--surf); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
 .msg-h { font-size: 12px; color: var(--lo); margin-bottom: 4px; }
+.msg-unread { border-left: 4px solid var(--sage); background: var(--sage-soft); }
+.unread-ct { background: var(--red) !important; color: #fff !important; border-color: var(--red) !important; }
 .msg-b { font-size: 13px; white-space: pre-wrap; }
 
 /* Modal */

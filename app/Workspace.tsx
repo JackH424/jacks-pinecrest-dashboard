@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition, useEffect } from "react";
 import type { Workspace as WS, Task, Comment } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat, markRead } from "./actions";
 
 const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -76,6 +76,15 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const dashProjStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); dashTasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [dashTasks]);
   const commentsFor = (type: string, id: string) => comments.filter((c) => c.target_type === type && c.target_id === id).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
   const myMessages = useMemo(() => comments.filter((c) => (c.mentions || []).includes(viewer)).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [comments, viewer]);
+  const [readSet, setReadSet] = useState<Set<string>>(() => new Set(data.reads.map((r) => r.person_id + "|" + r.comment_id)));
+  const viewerId = idByName.get(viewer) || "";
+  const unread = useMemo(() => myMessages.filter((c) => !readSet.has(viewerId + "|" + c.id)), [myMessages, readSet, viewerId]);
+  function markAllRead() {
+    if (unread.length === 0 || !viewerId) return;
+    const ids = unread.map((c) => c.id);
+    setReadSet((s2) => { const n = new Set(s2); ids.forEach((id) => n.add(viewerId + "|" + id)); return n; });
+    if (persists) start(() => { markRead(viewerId, ids); });
+  }
 
   const rows = useMemo(() => {
     const ql = q.toLowerCase();
@@ -152,7 +161,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
         <nav className="sidenav">
           <button className={`navlink ${view === "dashboard" ? "on" : ""}`} onClick={() => goView("dashboard")}>Dashboard</button>
           <button className={`navlink ${view === "tasks" ? "on" : ""}`} onClick={() => goView("tasks")}>All tasks</button>
-          <button className={`navlink ${view === "messages" ? "on" : ""}`} onClick={() => goView("messages")}>Messages {myMessages.length ? <span className="ct">{myMessages.length}</span> : null}</button>
+          <button className={`navlink ${view === "messages" ? "on" : ""}`} onClick={() => goView("messages")}>Messages {unread.length ? <span className="ct unread-ct">{unread.length}</span> : null}</button>
         </nav>
         <div className="side-sec">
           <div className="side-h">PROJECTS</div>
@@ -268,11 +277,11 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
 
         {view === "messages" && (
           <>
-            <div className="page-h">Messages</div>
+            <div className="page-h" style={{ display: "flex", gap: 12, alignItems: "baseline" }}>Messages {unread.length > 0 && <button className="clear" onClick={markAllRead}>mark all read ({unread.length})</button>}</div>
             <div className="msglist">
               {myMessages.length === 0 ? <div className="empty">No messages mention you yet.</div> :
                 myMessages.map((c) => (
-                  <div key={c.id} className="msg">
+                  <div key={c.id} className={`msg ${!readSet.has(viewerId + "|" + c.id) ? "msg-unread" : ""}`}>
                     <div className="msg-h"><b>{c.author}</b> in <span className="src">{projName(c.target_id) || c.target_id}</span> · {c.created_at?.replace("T", " ")}</div>
                     <div className="msg-b"><Body text={c.body} /></div>
                   </div>

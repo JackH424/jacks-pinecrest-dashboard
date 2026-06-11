@@ -78,7 +78,7 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
 - [x] 4. **Identity picker (login-lite)** — "Who are you?" dropdown of the 6, stored
       localStorage; replaces hardcoded primaryUser for "(me)", Messages, My Day,
       Telegram mapping. (Real Clerk auth = later A3, Jack deferred.)
-- [ ] 5. **Unread state** — table comment_reads(person_id,comment_id,read_at);
+- [x] 5. **Unread state** — table comment_reads(person_id,comment_id,read_at);
       Messages tab badge = unread mentions for viewer; mark-read on open.
 - [ ] 6. **Kanban board** — view grouping open tasks by status columns,
       HTML5 drag-drop between columns → setStatus.

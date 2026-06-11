@@ -24,7 +24,8 @@ export type Task = {
   source_date: string; source_url: string; description: string; repeat: string;
   updated_at: string; assignees: string[];
 };
-export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[] };
+export type Read = { person_id: string; comment_id: string };
+export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[]; reads: Read[] };
 
 let ready = false;
 
@@ -41,6 +42,7 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
   await sql`CREATE TABLE IF NOT EXISTS task_assignees (task_id text, person_id text, PRIMARY KEY (task_id, person_id))`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS description text DEFAULT ''`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS repeat text DEFAULT ''`;
+  await sql`CREATE TABLE IF NOT EXISTS comment_reads (person_id text, comment_id text, read_at timestamptz DEFAULT now(), PRIMARY KEY (person_id, comment_id))`;
   await sql`CREATE TABLE IF NOT EXISTS comments (
     id text PRIMARY KEY, target_type text NOT NULL, target_id text NOT NULL,
     author text NOT NULL DEFAULT 'Unknown', body text NOT NULL DEFAULT '',
@@ -90,7 +92,7 @@ function fallback(): Workspace {
   const people = (seedPeople as { id: string; name: string }[]).map((p) => ({
     ...p, open: tasks.filter((t) => t.assignees.includes(p.name) && t.status !== "done").length,
   }));
-  return { projects, people, tasks, comments: seedComments as Comment[] };
+  return { projects, people, tasks, comments: seedComments as Comment[], reads: [] };
 }
 
 export async function getWorkspace(): Promise<Workspace> {
@@ -118,7 +120,8 @@ export async function getWorkspace(): Promise<Workspace> {
       SELECT id,target_type,target_id,author,body,
              COALESCE(to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS'),'') AS created_at, mentions
       FROM comments ORDER BY created_at ASC`) as Comment[];
-    return { projects, people, tasks, comments };
+    const reads = (await sql`SELECT person_id, comment_id FROM comment_reads`) as Read[];
+    return { projects, people, tasks, comments, reads };
   } catch (err) {
     console.error("DB read failed, using seed fallback:", err);
     return fallback();

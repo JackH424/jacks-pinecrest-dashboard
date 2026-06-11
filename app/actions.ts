@@ -127,6 +127,15 @@ export async function updateTaskTitle(taskId: string, title: string) {
   return { ok: true };
 }
 
+export async function markRead(personId: string, commentIds: string[]) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  for (const cid of (commentIds || []).slice(0, 500)) {
+    await sql`INSERT INTO comment_reads (person_id, comment_id) VALUES (${personId}, ${cid}) ON CONFLICT DO NOTHING`;
+  }
+  return { ok: true };
+}
+
 export async function addComment(
   targetType: "task" | "project", targetId: string, author: string, body: string
 ) {
