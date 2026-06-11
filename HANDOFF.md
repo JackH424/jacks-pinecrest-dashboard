@@ -82,9 +82,9 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       Messages tab badge = unread mentions for viewer; mark-read on open.
 - [x] 6. **Kanban board** — view grouping open tasks by status columns,
       HTML5 drag-drop between columns → setStatus.
-- [ ] 7. **Subtask checklists** — table checklist_items(id,task_id,text,done,pos);
+- [x] 7. **Subtask checklists** — table checklist_items(id,task_id,text,done,pos);
       editable list in task modal; card shows 2/5 progress.
-- [ ] 8. **Task dependencies** — table task_deps(task_id,blocks_on);
+- [x] 8. **Task dependencies** — table task_deps(task_id,blocks_on);
       modal "blocked by" picker; auto-status Blocked while any dep open; show link.
 - [ ] 9. **Calendar view** — month grid of tasks by due date (topbar Calendar tab).
 - [ ] 10. **My Day** — personal view for viewer: overdue + due today/this week +

@@ -31,6 +31,12 @@ export async function setStatus(taskId: string, status: string) {
       await sql`INSERT INTO task_assignees (task_id,person_id) SELECT ${id},person_id FROM task_assignees WHERE task_id=${taskId} ON CONFLICT DO NOTHING`;
       await sql`UPDATE tasks2 SET repeat='' WHERE id=${taskId}`;
     }
+    // Dependencies: unblock dependents whose blockers are now all done.
+    await sql`UPDATE tasks2 SET status='todo', updated_at=now()
+      WHERE status='blocked' AND id IN (SELECT task_id FROM task_deps WHERE blocks_on=${taskId})
+      AND NOT EXISTS (
+        SELECT 1 FROM task_deps d JOIN tasks2 b ON b.id=d.blocks_on
+        WHERE d.task_id=tasks2.id AND b.status<>'done')`;
   }
   revalidatePath("/");
   return { ok: true };
@@ -123,6 +129,53 @@ export async function updateTaskTitle(taskId: string, title: string) {
   const t = (title || "").trim();
   if (!t) return { ok: false, error: "empty" };
   await sql`UPDATE tasks2 SET title = ${t}, updated_at = now() WHERE id = ${taskId}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function addChecklistItem(taskId: string, text: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  const t = (text || "").trim();
+  if (!t) return { ok: false };
+  const id = "cl" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  const pos = ((await sql`SELECT COALESCE(max(pos),0)+1 AS n FROM checklist_items WHERE task_id=${taskId}`) as { n: number }[])[0].n;
+  await sql`INSERT INTO checklist_items (id, task_id, text, pos) VALUES (${id}, ${taskId}, ${t}, ${pos})`;
+  revalidatePath("/");
+  return { ok: true, id };
+}
+
+export async function toggleChecklistItem(id: string, done: boolean) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`UPDATE checklist_items SET done = ${done} WHERE id = ${id}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteChecklistItem(id: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`DELETE FROM checklist_items WHERE id = ${id}`;
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function addDep(taskId: string, blocksOn: string) {
+  const sql = getSql();
+  if (!sql || taskId === blocksOn) return { ok: false };
+  await sql`INSERT INTO task_deps (task_id, blocks_on) VALUES (${taskId}, ${blocksOn}) ON CONFLICT DO NOTHING`;
+  // If the dependency is still open, the task is blocked.
+  const open = (await sql`SELECT 1 FROM tasks2 WHERE id=${blocksOn} AND status<>'done'`) as unknown[];
+  if (open.length) await sql`UPDATE tasks2 SET status='blocked', updated_at=now() WHERE id=${taskId}`;
+  revalidatePath("/");
+  return { ok: true, blocked: open.length > 0 };
+}
+
+export async function removeDep(taskId: string, blocksOn: string) {
+  const sql = getSql();
+  if (!sql) return { ok: false, error: "no database" };
+  await sql`DELETE FROM task_deps WHERE task_id=${taskId} AND blocks_on=${blocksOn}`;
   revalidatePath("/");
   return { ok: true };
 }

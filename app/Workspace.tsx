@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition, useEffect } from "react";
-import type { Workspace as WS, Task, Comment } from "@/lib/data";
+import type { Workspace as WS, Task, Comment, ChecklistItem, Dep } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
-import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat, markRead } from "./actions";
+import { setStatus, toggleAssignee, moveTask, addComment, addTask, renameProject, updateTaskTitle, setDue, setDescription, setPriority, setRepeat, markRead, addChecklistItem, toggleChecklistItem, deleteChecklistItem, addDep, removeDep } from "./actions";
 
 const PRIORITIES = ["urgent", "high", "normal", "low"] as const;
 const PRI_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -25,6 +25,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   const [, start] = useTransition();
   const [tasks, setTasks] = useState<Task[]>(data.tasks);
   const [comments, setComments] = useState<Comment[]>(data.comments);
+  const [checklists, setChecklists] = useState<ChecklistItem[]>(data.checklists);
+  const [deps, setDeps] = useState<Dep[]>(data.deps);
   const [projOverride, setProjOverride] = useState<Record<string, string>>({});
   const [view, setView] = useState<View>("dashboard");
   const [selProj, setSelProj] = useState<string | null>(null);
@@ -148,6 +150,31 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   function changeDesc(t: Task, d: string) { patch(t.id, (x) => ({ ...x, description: d })); if (persists) start(() => { setDescription(t.id, d); }); }
   function changePri(t: Task, p: string) { patch(t.id, (x) => ({ ...x, priority: p })); if (persists) start(() => { setPriority(t.id, p); }); }
   function changeRepeat(t: Task, r: string) { patch(t.id, (x) => ({ ...x, repeat: r })); if (persists) start(() => { setRepeat(t.id, r); }); }
+  function clAdd(taskId: string, text: string) {
+    const t = text.trim(); if (!t) return;
+    const id = "tmpcl" + Math.random().toString(36).slice(2);
+    setChecklists((c) => [...c, { id, task_id: taskId, text: t, done: false, pos: c.length }]);
+    if (persists) start(() => { addChecklistItem(taskId, t); });
+  }
+  function clToggle(item: ChecklistItem) {
+    setChecklists((c) => c.map((x) => x.id === item.id ? { ...x, done: !x.done } : x));
+    if (persists) start(() => { toggleChecklistItem(item.id, !item.done); });
+  }
+  function clDelete(item: ChecklistItem) {
+    setChecklists((c) => c.filter((x) => x.id !== item.id));
+    if (persists) start(() => { deleteChecklistItem(item.id); });
+  }
+  function depAdd(t: Task, blocksOn: string) {
+    if (!blocksOn || blocksOn === t.id) return;
+    setDeps((d) => [...d, { task_id: t.id, blocks_on: blocksOn }]);
+    const blocker = tasks.find((x) => x.id === blocksOn);
+    if (blocker && blocker.status !== "done") patch(t.id, (x) => ({ ...x, status: "blocked" }));
+    if (persists) start(() => { addDep(t.id, blocksOn); });
+  }
+  function depRemove(t: Task, blocksOn: string) {
+    setDeps((d) => d.filter((x) => !(x.task_id === t.id && x.blocks_on === blocksOn)));
+    if (persists) start(() => { removeDep(t.id, blocksOn); });
+  }
   function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: viewer, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, viewer, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
@@ -443,6 +470,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
                       </select>
                     </div>
                     <div className="tcard-foot">
+                      {(() => { const cl = checklists.filter((c) => c.task_id === t.id); return cl.length ? <span className="cl-prog">✓ {cl.filter((c) => c.done).length}/{cl.length}</span> : null; })()}
                       <input type="date" className={`dueinput ${dueClass(t.due)}`} value={t.due || ""} onChange={(e) => changeDue(t, e.target.value)} title="Due date" />
                       <button className="linkbtn" onClick={() => setOpenTaskId(t.id)}>💬 {commentsFor("task", t.id).length || ""}</button>
                       {t.source_url && <a className="src" href={t.source_url} target="_blank" rel="noreferrer">source</a>}
@@ -494,6 +522,35 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               </select>
             </div>
             <DescriptionBox key={openTask.id} value={openTask.description || ""} onSave={(d) => changeDesc(openTask, d)} />
+            <div className="descbox">
+              <div className="desc-l">Checklist</div>
+              {checklists.filter((c) => c.task_id === openTask.id).map((c) => (
+                <div key={c.id} className="cl-row">
+                  <input type="checkbox" checked={c.done} onChange={() => clToggle(c)} />
+                  <span className={c.done ? "cl-done" : ""}>{c.text}</span>
+                  <button className="clear" onClick={() => clDelete(c)}>×</button>
+                </div>
+              ))}
+              <AddInline placeholder="Add checklist step…" onAdd={(v) => clAdd(openTask.id, v)} />
+            </div>
+            <div className="descbox">
+              <div className="desc-l">Blocked by</div>
+              {deps.filter((d) => d.task_id === openTask.id).map((d) => {
+                const b = tasks.find((x) => x.id === d.blocks_on);
+                return (
+                  <div key={d.blocks_on} className="cl-row">
+                    <span>🔒 {b ? b.title : d.blocks_on}{b && b.status === "done" ? " ✓" : ""}</span>
+                    <button className="clear" onClick={() => depRemove(openTask, d.blocks_on)}>×</button>
+                  </div>
+                );
+              })}
+              <select className="streamsel" value="" onChange={(e) => { depAdd(openTask, e.target.value); e.currentTarget.value = ""; }}>
+                <option value="">+ add blocking task…</option>
+                {tasks.filter((x) => x.id !== openTask.id && x.status !== "done" && (x.project_id === openTask.project_id || tasks.length < 80)).slice(0, 100).map((x) => (
+                  <option key={x.id} value={x.id}>{x.title.slice(0, 70)}</option>
+                ))}
+              </select>
+            </div>
             <Thread items={commentsFor("task", openTask.id)} onPost={(b) => post("task", openTask.id, b)} />
           </div>
         </div>
@@ -524,6 +581,17 @@ function Editable({ value, onSave, className }: { value: string; onSave: (v: str
     return (<input className={`edit-input ${className || ""}`} autoFocus value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { onSave(v); setEditing(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onSave(v); setEditing(false); } if (e.key === "Escape") setEditing(false); }} />);
   }
   return <span className={`editable ${className || ""}`} onClick={() => { setV(value); setEditing(true); }} title="click to edit">{value} <span className="pencil">✎</span></span>;
+}
+
+function AddInline({ placeholder, onAdd }: { placeholder: string; onAdd: (v: string) => void }) {
+  const [v, setV] = useState("");
+  return (
+    <div className="cl-add">
+      <input placeholder={placeholder} value={v} onChange={(e) => setV(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && v.trim()) { onAdd(v); setV(""); } }} />
+      <button className="post" onClick={() => { if (v.trim()) { onAdd(v); setV(""); } }} disabled={!v.trim()}>Add</button>
+    </div>
+  );
 }
 
 function DescriptionBox({ value, onSave }: { value: string; onSave: (v: string) => void }) {

@@ -238,6 +238,13 @@ button { font: inherit; }
 .descbox { margin-bottom: 14px; }
 .desc-l { font-size: 11px; letter-spacing: .05em; color: var(--lo); font-weight: 700; margin-bottom: 4px; }
 .desc { width: 100%; min-height: 70px; resize: vertical; background: var(--base); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; color: var(--hi); }
+.cl-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.cl-row span { flex: 1; }
+.cl-done { text-decoration: line-through; color: var(--lo); }
+.cl-add { display: flex; gap: 6px; margin-top: 6px; }
+.cl-add input { flex: 1; background: var(--surf); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 13px; color: var(--hi); }
+.cl-add .post { padding: 6px 12px; }
+.cl-prog { background: var(--sage-soft); color: var(--sage); border-radius: 10px; font-size: 11px; font-weight: 700; padding: 1px 7px; margin-right: 6px; }
 .empty { padding: 40px; text-align: center; color: var(--lo); }
 .note { color: var(--lo); font-size: 12px; margin-top: 16px; }
 

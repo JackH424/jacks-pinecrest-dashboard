@@ -25,7 +25,9 @@ export type Task = {
   updated_at: string; assignees: string[];
 };
 export type Read = { person_id: string; comment_id: string };
-export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[]; reads: Read[] };
+export type ChecklistItem = { id: string; task_id: string; text: string; done: boolean; pos: number };
+export type Dep = { task_id: string; blocks_on: string };
+export type Workspace = { projects: Project[]; people: Person[]; tasks: Task[]; comments: Comment[]; reads: Read[]; checklists: ChecklistItem[]; deps: Dep[] };
 
 let ready = false;
 
@@ -42,6 +44,8 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
   await sql`CREATE TABLE IF NOT EXISTS task_assignees (task_id text, person_id text, PRIMARY KEY (task_id, person_id))`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS description text DEFAULT ''`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS repeat text DEFAULT ''`;
+  await sql`CREATE TABLE IF NOT EXISTS checklist_items (id text PRIMARY KEY, task_id text NOT NULL, text text NOT NULL, done boolean DEFAULT false, pos int DEFAULT 0)`;
+  await sql`CREATE TABLE IF NOT EXISTS task_deps (task_id text, blocks_on text, PRIMARY KEY (task_id, blocks_on))`;
   await sql`CREATE TABLE IF NOT EXISTS comment_reads (person_id text, comment_id text, read_at timestamptz DEFAULT now(), PRIMARY KEY (person_id, comment_id))`;
   await sql`CREATE TABLE IF NOT EXISTS comments (
     id text PRIMARY KEY, target_type text NOT NULL, target_id text NOT NULL,
@@ -92,7 +96,7 @@ function fallback(): Workspace {
   const people = (seedPeople as { id: string; name: string }[]).map((p) => ({
     ...p, open: tasks.filter((t) => t.assignees.includes(p.name) && t.status !== "done").length,
   }));
-  return { projects, people, tasks, comments: seedComments as Comment[], reads: [] };
+  return { projects, people, tasks, comments: seedComments as Comment[], reads: [], checklists: [], deps: [] };
 }
 
 export async function getWorkspace(): Promise<Workspace> {
@@ -121,7 +125,9 @@ export async function getWorkspace(): Promise<Workspace> {
              COALESCE(to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS'),'') AS created_at, mentions
       FROM comments ORDER BY created_at ASC`) as Comment[];
     const reads = (await sql`SELECT person_id, comment_id FROM comment_reads`) as Read[];
-    return { projects, people, tasks, comments, reads };
+    const checklists = (await sql`SELECT id, task_id, text, done, pos FROM checklist_items ORDER BY pos, id`) as ChecklistItem[];
+    const deps = (await sql`SELECT task_id, blocks_on FROM task_deps`) as Dep[];
+    return { projects, people, tasks, comments, reads, checklists, deps };
   } catch (err) {
     console.error("DB read failed, using seed fallback:", err);
     return fallback();
