@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_KEY = process.env.OPENAI_API_KEY || process.env.OpenAIKey || process.env.OPENAIKEY;
 
 const STATUS_MAP: Record<string, string> = {
   "to do": "todo", todo: "todo", backlog: "todo",
@@ -108,12 +109,12 @@ Statuses are: To Do, In Progress, Waiting, Blocked, Done. Reference projects and
 When the user gives meeting context, create well-described tasks (use the description field for rich context). Be concise; confirm what you did.`;
 
 export async function POST(req: Request) {
-  if (!process.env.OPENAI_API_KEY) return Response.json({ reply: "OpenAI key not configured. Add OPENAI_API_KEY in Vercel." });
+  if (!OPENAI_KEY) return Response.json({ reply: "OpenAI key not configured. Add OPENAI_API_KEY (or OpenAIKey) in Vercel." });
   const sql = getSql();
   if (!sql) return Response.json({ reply: "Database not connected." });
   const body = await req.json().catch(() => ({}));
   const history = Array.isArray(body.messages) ? body.messages : [];
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = new OpenAI({ apiKey: OPENAI_KEY });
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM },
     ...history.map((m: { role: string; content: string }) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content } as OpenAI.Chat.Completions.ChatCompletionMessageParam)),
