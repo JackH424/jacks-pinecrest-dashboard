@@ -50,6 +50,13 @@ export async function GET(req: Request) {
     .map((n) => n.path).sort();
 
   const last = ((await sql`SELECT val FROM _meta WHERE key='triage_last_file'`) as { val: string }[])[0]?.val || "";
+  // First run: baseline to the newest existing transcript — only meetings from
+  // now on get triaged (not the 335-file historical backlog).
+  if (!last && files.length) {
+    const newest = files[files.length - 1];
+    await sql`INSERT INTO _meta (key,val) VALUES ('triage_last_file', ${newest}) ON CONFLICT (key) DO UPDATE SET val = ${newest}`;
+    return Response.json({ ok: true, initialized: true, baseline: newest });
+  }
   const todo = files.filter((f) => f > last).slice(0, MAX_FILES_PER_RUN);
   if (todo.length === 0) return Response.json({ ok: true, new_files: 0, queued: 0 });
 
