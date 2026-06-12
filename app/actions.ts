@@ -2,6 +2,7 @@
 
 import { getSql } from "@/lib/db";
 import { STATUS_IDS } from "@/lib/statuses";
+import { sendTelegram, telegramEnabled } from "@/lib/telegram";
 import { revalidatePath } from "next/cache";
 
 const STATUSES = new Set(STATUS_IDS);
@@ -226,6 +227,26 @@ export async function addComment(
   const id = "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
   await sql`INSERT INTO comments (id,target_type,target_id,author,body,mentions)
     VALUES (${id}, ${targetType}, ${targetId}, ${author}, ${text}, ${JSON.stringify(mentions)}::json)`;
+  // Telegram DM each mentioned team member (except the author). No-op until
+  // TELEGRAM_BOT_TOKEN is set and the person has registered with the bot.
+  if (telegramEnabled() && mentions.length) {
+    try {
+      const others = mentions.filter((m) => m.toLowerCase() !== author.toLowerCase());
+      if (others.length) {
+        const titleRows = (targetType === "task"
+          ? await sql`SELECT title FROM tasks2 WHERE id = ${targetId}`
+          : await sql`SELECT name AS title FROM projects WHERE id = ${targetId}`) as { title: string }[];
+        const title = titleRows[0]?.title || targetId;
+        const recipients = (await sql`SELECT name, telegram_chat_id FROM people
+          WHERE lower(name) = ANY(${others.map((m) => m.toLowerCase())}) AND telegram_chat_id <> ''`) as
+          { name: string; telegram_chat_id: string }[];
+        await Promise.all(recipients.map((r) =>
+          sendTelegram(r.telegram_chat_id, `${author} mentioned you on "${title}":\n${text}`)));
+      }
+    } catch {
+      // never let a notification failure break the comment
+    }
+  }
   revalidatePath("/");
   return { ok: true, id, mentions };
 }

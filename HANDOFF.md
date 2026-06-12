@@ -98,10 +98,16 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       → parse new transcripts' "## Action items" since last sync (track last file in
       _meta) → AI (OpenAI key, already set) routes project/assignee → triage rows.
       UI: "Triage" nav item w/ pending count; accept→create task / dismiss.
-- [ ] 13. **Telegram notifications** — on @mention comment + daily due reminders,
-      send Telegram DM. Needs Jack: create bot via @BotFather (token → env
-      `TELEGRAM_BOT_TOKEN`); each member messages the bot once; store chat_ids in
-      people table (col `telegram_chat_id`; tiny `/api/telegram/webhook` to capture).
+- [x] 13. **Telegram notifications** (code DONE; activates when Jack adds
+      `TELEGRAM_BOT_TOKEN` env var in Vercel + redeploy, then sets the bot
+      webhook) — on @mention comment (addComment in app/actions.ts) + daily due
+      reminders (cron mirrors the System comment, only on first insert), send
+      Telegram DM via lib/telegram.ts (silently dormant without token).
+      Registration: people col `telegram_chat_id`; member DMs the bot their
+      full team name → `/api/telegram/webhook` stores chat_id (optional env
+      `TELEGRAM_WEBHOOK_SECRET` checked against Telegram's secret-token header;
+      pass same value as `secret_token` in setWebhook). Webhook setup (browser):
+      `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://jacks-pinecrest-dashboard.vercel.app/api/telegram/webhook&secret_token=<SECRET>`
 - [ ] 14. **Weekly digest** — Monday-morning cron: per-person Telegram (or in-app
       message fallback): open/overdue/done-last-week/stale summary.
 

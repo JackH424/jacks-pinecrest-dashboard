@@ -45,6 +45,7 @@ async function ensureReady(sql: NonNullable<ReturnType<typeof getSql>>) {
   await sql`CREATE TABLE IF NOT EXISTS task_assignees (task_id text, person_id text, PRIMARY KEY (task_id, person_id))`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS description text DEFAULT ''`;
   await sql`ALTER TABLE tasks2 ADD COLUMN IF NOT EXISTS repeat text DEFAULT ''`;
+  await sql`ALTER TABLE people ADD COLUMN IF NOT EXISTS telegram_chat_id text DEFAULT ''`;
   await sql`CREATE TABLE IF NOT EXISTS checklist_items (id text PRIMARY KEY, task_id text NOT NULL, text text NOT NULL, done boolean DEFAULT false, pos int DEFAULT 0)`;
   await sql`CREATE TABLE IF NOT EXISTS task_deps (task_id text, blocks_on text, PRIMARY KEY (task_id, blocks_on))`;
   await sql`CREATE TABLE IF NOT EXISTS triage_items (
