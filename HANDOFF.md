@@ -108,8 +108,15 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
       `TELEGRAM_WEBHOOK_SECRET` checked against Telegram's secret-token header;
       pass same value as `secret_token` in setWebhook). Webhook setup (browser):
       `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://jacks-pinecrest-dashboard.vercel.app/api/telegram/webhook&secret_token=<SECRET>`
-- [ ] 14. **Weekly digest** — Monday-morning cron: per-person Telegram (or in-app
-      message fallback): open/overdue/done-last-week/stale summary.
+- [x] 14. **Weekly digest** — cron `app/api/cron/digest/route.ts`, Mondays
+      12:00 UTC (vercel.json). Per team member: open/overdue/done-last-week/
+      stale(>10d) counts. Always posts in-app System comment on project
+      'oneoff' @mentioning them (id `dig-<person>-<ymd>` = idempotent);
+      mirrors as Telegram DM when registered (first insert only).
+
+QUEUE COMPLETE. Next dashboard work: revisit Deferred list (Clerk auth before
+team rollout) or new requests from Jack. Telegram (#13) + triage (#12) still
+need Jack's env vars in Vercel to activate (see feature notes).
 
 ## Deferred / vetoed
 - A3 real login (Clerk): recommended, Jack deferred — revisit before team rollout.
