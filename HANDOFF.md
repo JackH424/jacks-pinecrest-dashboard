@@ -142,7 +142,31 @@ Eli's target model (his onboarding assumes starting from scratch):
   step-by-step checklist. DO NOT create durable KB files until C:\KB exists
   and is the working folder.
 
-**We are NOT starting from scratch — reconcile with the existing system:**
+**MIGRATION STATUS (done 2026-06-12 — verify, don't redo):**
+- ✅ Tools installed (gh 2.94 user-scope, codex); gh logged in as JackH424.
+- ✅ Cloned: C:\kb-system (L1), C:\pfokb (shared L2), C:\KB (= pinecrestgroup/kb-jack,
+  pre-seeded by Eli; L1 mounts from kb-system).
+- ✅ 337 transcripts → C:\KB\PFO\raw\transcripts (+ audit → PFO/raw/audit),
+  pushed (commit 40d43b3).
+- ✅ Otter poller re-homed: _scripts/poll_otter.py (paths adapted to PFO/raw/...)
+  + .github/workflows/otter-poll.yml + state file (337 ids, no re-ingest) +
+  OTTER_API_KEY secret (gotcha: set via `gh secret set --body`, NOT PowerShell
+  pipe — pipe adds a BOM that breaks the Authorization header). Manual run
+  verified green: "No new conversations". Old repo's poll workflow DISABLED.
+- ⬜ REMAINING (next session): (1) Dashboard triage re-point: in
+  app/api/cron/triage/route.ts set REPO=pinecrestgroup/kb-jack and path regex
+  ^PFO\/raw\/transcripts\/...; RESET _meta key 'triage_last_file' (old marker
+  'raw/...' sorts AFTER new 'PFO/...' paths → would block everything); Jack
+  must issue a new GITHUB_TOKEN PAT scoped to pinecrestgroup/kb-jack (org must
+  allow fine-grained PATs; else classic token w/ repo scope) → Vercel env.
+  (2) Jack repoints Obsidian vault + Hermes/AGENTS references to C:\KB.
+  (3) Jack does Eli's "first session" in VS Code at C:\KB (name agent, role).
+  (4) Old wikis (618) intentionally NOT migrated — regenerable; Eli's pipeline
+  compiles fresh L2. (5) Archive JackH424/jacks-pinecrest-brain ONLY after
+  triage re-point. (6) Jack: heads-up to Eli that kb-jack now carries the
+  Otter workflow/scripts.
+
+**Original reconciliation plan (kept for reference):**
 - Existing private KB: `JackH424/jacks-pinecrest-brain` at
   C:\Users\jackh\jacks-pinecrest-brain — 335+ Otter transcripts (L3, sacred),
   618 compiled wikis (L2, regenerable), INTERIM L1 files (now superseded by
