@@ -110,12 +110,59 @@ IDs: projects `p<mondayid>`/`oneoff`, tasks `s<sub>`/`t<main>`/`n…`(new)/`tmp�
 - Skip: Gantt, guest access, built-in chat channels, Motion-style auto-scheduling.
 - Later: templates, decision log, KB↔task links, carrier pipeline view, role perms.
 
-## KB repo backlog (separate from dashboard)
-- Eli's real L1 files → drop in root, re-run compile (wikis are regenerable).
-- Wiki dedupe/enrichment pass; steady-state compile automation for new transcripts.
+## WORKSTREAM 2 (ACTIVE): Eli's org KB onboarding — adapt, don't restart
+
+Status: Eli (CEO) delivered the real L1/L2/L3 system as an org-level structure.
+Jack is onboarding to it. The DASHBOARD work above is PAUSED at feature #13
+until this is done (resume from the queue afterward).
+
+Eli's target model (his onboarding assumes starting from scratch):
+- `pinecrestgroup/kb-system` → clone at **C:\kb-system** — L1 "Piney Brain
+  System": org operating rules. READ-ONLY shared.
+- `pinecrestgroup/pfokb` → clone at **C:\pfokb** — shared compiled L2 wiki
+  (PFO KB). READ-ONLY shared.
+- `pinecrestgroup/kb-jack` (kb-<user>) → clone at **C:\KB** — Jack's PRIVATE
+  writable workspace: uses L1 rules from kb-system, captures L3 raw, compiles
+  private L2. Normal workspace = VS Code opened at C:\KB.
+- KB folders must be LOCAL paths (C:\...), never OneDrive/Desktop-synced dirs.
+- Process: Jack pastes ONBOARDING.md from Eli's HTML runbook → follow it as a
+  step-by-step checklist. DO NOT create durable KB files until C:\KB exists
+  and is the working folder.
+
+**We are NOT starting from scratch — reconcile with the existing system:**
+- Existing private KB: `JackH424/jacks-pinecrest-brain` at
+  C:\Users\jackh\jacks-pinecrest-brain — 335+ Otter transcripts (L3, sacred),
+  618 compiled wikis (L2, regenerable), INTERIM L1 files (now superseded by
+  Eli's kb-system), GitHub Actions Otter poller (secret OTTER_API_KEY,
+  every 30 min), _audit/, _scripts/ (digest, compile).
+- Likely migration (confirm against ONBOARDING.md once pasted):
+  1. Get Jack added to `pinecrestgroup` org + his `kb-jack` repo created/access.
+  2. Clone kb-system → C:\kb-system, pfokb → C:\pfokb, kb-jack → C:\KB.
+  3. Move existing content INTO C:\KB / kb-jack: raw/ (transcripts+audit)
+     untouched; wikis/ can regenerate under Eli's pipeline; DELETE interim L1
+     files (CLAUDE.md/brain.md/pipeline.md/index.md/etc.) in favor of
+     kb-system rules — unless Eli's model expects per-KB L1 stubs.
+  4. Re-home the Otter poller: copy .github/workflows/poll.yml +
+     _scripts/poll_otter.py into kb-jack, add OTTER_API_KEY secret to the new
+     repo, verify a manual run, THEN disable the old repo's workflow
+     (don't run both = duplicate ingestion; state file _scripts/.otter_state.json
+     must move too).
+  5. Update dependents that point at the old repo/path:
+     - Dashboard triage cron: REPO const in app/api/cron/triage/route.ts +
+       the GITHUB_TOKEN PAT scope (currently jacks-pinecrest-brain).
+     - AGENTS.md / Hermes MCP config paths; Obsidian vault location.
+  6. Archive (don't delete) jacks-pinecrest-brain after migration verified.
+- PHI policy unchanged: no PHI in any KB repo.
+
+## KB repo backlog (carry into kb-jack after migration)
+- Wiki dedupe/enrichment pass; steady-state compile automation per Eli's pipeline.
 - Gmail ingestion w/ spreadsheet approval gate (original Phase 5) — not started.
 
 ## CONTINUATION PROMPT (paste into a fresh Claude Code session)
+
+There are TWO workstreams. WORKSTREAM 2 (KB onboarding, above) runs FIRST;
+the dashboard queue resumes after. A fresh session should ask Jack which one
+he wants if unclear.
 
 ```
 Read C:\Users\jackh\jacks-pinecrest-dashboard\HANDOFF.md fully and follow it.
