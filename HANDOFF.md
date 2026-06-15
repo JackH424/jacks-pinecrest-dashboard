@@ -166,6 +166,24 @@ Eli's target model (his onboarding assumes starting from scratch):
   triage re-point. (6) Jack: heads-up to Eli that kb-jack now carries the
   Otter workflow/scripts.
 
+**PRIORITY: get the KB fully READY before ANY dashboard work.** Do not resume
+the dashboard feature queue (paused at #13) until every KB criterion below is
+met. Dashboard is background context only right now.
+
+**KB IS "READY" WHEN (acceptance criteria):**
+- [ ] Opening C:\KB in Claude Code boots with Eli's L1 brain from kb-system
+      (not the old interim files).
+- [ ] 337 transcripts present at C:\KB\PFO\raw\transcripts (migrate commit in git log).
+- [ ] Otter poller on pinecrestgroup/kb-jack: a SCHEDULED (not just manual) run is
+      green with "No new conversations" (no re-ingest). `gh run list -R
+      pinecrestgroup/kb-jack`. GitHub disables schedules on inactivity — confirm enabled.
+- [ ] Obsidian vault re-pointed to C:\KB (transcripts at PFO/raw/transcripts).
+- [ ] Eli's "first session" done by Jack in VS Code at C:\KB (name agent, role) —
+      a JACK-LED conversation, not an automated build step.
+- [ ] Eli told that kb-jack now carries the Otter workflow + _scripts.
+- [ ] (Optional, Eli-dependent) L2 wiki recompiled under Eli's pipeline.
+Only after ALL of the above: dashboard triage re-point + resume queue at #13.
+
 **Original reconciliation plan (kept for reference):**
 - Existing private KB: `JackH424/jacks-pinecrest-brain` at
   C:\Users\jackh\jacks-pinecrest-brain — 335+ Otter transcripts (L3, sacred),
