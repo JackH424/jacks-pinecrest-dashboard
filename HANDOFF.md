@@ -118,6 +118,24 @@ QUEUE COMPLETE. Next dashboard work: revisit Deferred list (Clerk auth before
 team rollout) or new requests from Jack. Telegram (#13) + triage (#12) still
 need Jack's env vars in Vercel to activate (see feature notes).
 
+## SESSION 2026-06-17 (dashboard resumed — Jack directed UI + KB-integration work)
+Workstream-2 KB migration is effectively done (boots clean from C:\KB), so the
+dashboard pause is lifted per Jack. Done this session:
+- **Triage re-point** to pinecrestgroup/kb-jack (see migration item (1) above) —
+  code complete; awaits Jack's GITHUB_TOKEN in Vercel. ?backfill=N seeds queue.
+- **Live dashboard rail**: the always-empty "Reminders/Upcoming" cards now show
+  real DUE & OVERDUE + UPCOMING(7d) task lists, and a "FROM YOUR MEETINGS" triage
+  spotlight card (shows pending triage count, jumps to Triage). Workspace.tsx
+  dueToday/upcoming memos + rail JSX; styles in globals.css (.rail-row etc.).
+- **Real-time-ish updates**: new `app/api/pulse/route.ts` returns a cheap change
+  signature; Workspace polls it every 30s + on tab focus and shows a "↻ New
+  updates — refresh" pill when the DB changed elsewhere (teammate / triage cron).
+  Self-edits within 5s are suppressed (lastEditRef). Non-disruptive; manual
+  refresh only. NOTE: true push/websocket real-time deferred (Neon has no native
+  realtime; polling chosen as the safe, low-cost path).
+Next candidates discussed with Jack: activity feed, delegation flow, project
+health rollup, real Clerk auth before team rollout.
+
 ## Deferred / vetoed
 - A3 real login (Clerk): recommended, Jack deferred — revisit before team rollout.
 - Skip: Gantt, guest access, built-in chat channels, Motion-style auto-scheduling.

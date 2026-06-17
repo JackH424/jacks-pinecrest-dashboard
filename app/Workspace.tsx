@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition, useEffect } from "react";
+import { useMemo, useState, useTransition, useEffect, useRef } from "react";
 import type { Workspace as WS, Task, Comment, ChecklistItem, Dep, TriageItem } from "@/lib/data";
 import { TEAM, TEAM_SET } from "@/lib/team";
 import { STATUSES, ONEOFF_ID } from "@/lib/statuses";
@@ -54,6 +54,36 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
   }, [primaryUser]);
   function pickViewer(n: string) { setViewer(n); window.localStorage.setItem("mc_viewer", n); setShowPicker(false); }
 
+  // Live-ish updates: poll a cheap change-signature; offer a refresh when the
+  // DB changed from elsewhere (a teammate or the meeting-triage cron). Changes
+  // within 5s of one of this user's own edits are ignored so self-writes don't
+  // nag. Non-disruptive — never auto-reloads mid-edit.
+  const lastEditRef = useRef(0);
+  const sigRef = useRef<string | null>(null);
+  const [updatesReady, setUpdatesReady] = useState(false);
+  useEffect(() => {
+    if (!persists) return;
+    let stop = false;
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const r = await fetch("/api/pulse", { cache: "no-store" });
+        const { sig } = await r.json();
+        if (!sig || sig === "err") return;
+        if (sigRef.current === null) { sigRef.current = sig; return; }
+        if (sig !== sigRef.current) {
+          if (Date.now() - lastEditRef.current > 5000) setUpdatesReady(true);
+          sigRef.current = sig;
+        }
+      } catch { /* offline / transient — ignore */ }
+    };
+    tick();
+    const iv = setInterval(() => { if (!document.hidden) tick(); }, 30000);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    return () => { stop = true; clearInterval(iv); window.removeEventListener("focus", onFocus); };
+  }, [persists]);
+
   const [peopleFilter, setPeopleFilter] = useState<string[]>([]);
   function togglePerson(n: string) { setPeopleFilter((f) => f.includes(n) ? f.filter((x) => x !== n) : [...f, n]); }
   const [dueFilter, setDueFilter] = useState<"any" | "overdue" | "week" | "month">("any");
@@ -79,6 +109,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
       .slice(0, 7);
   }, [dashTasks]);
   const counts = useMemo(() => ({ open: dashTasks.filter((t) => t.status !== "done").length, inprog: dashTasks.filter((t) => t.status === "in_progress").length, blocked: dashTasks.filter((t) => t.status === "blocked").length, done: dashTasks.filter((t) => t.status === "done").length }), [dashTasks]);
+  const dueToday = useMemo(() => dashTasks.filter((t) => t.status !== "done" && t.due && t.due <= today).sort((a, b) => a.due.localeCompare(b.due)), [dashTasks, today]);
+  const upcoming = useMemo(() => dashTasks.filter((t) => t.status !== "done" && t.due && t.due > today && t.due <= weekAhead).sort((a, b) => a.due.localeCompare(b.due)), [dashTasks, today, weekAhead]);
   const dashProjStats = useMemo(() => { const m = new Map<string, { total: number; open: number }>(); dashTasks.forEach((t) => { const s = m.get(t.project_id) ?? { total: 0, open: 0 }; s.total++; if (t.status !== "done") s.open++; m.set(t.project_id, s); }); return m; }, [dashTasks]);
   const commentsFor = (type: string, id: string) => comments.filter((c) => c.target_type === type && c.target_id === id).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
   const myMessages = useMemo(() => comments.filter((c) => (c.mentions || []).includes(viewer)).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [comments, viewer]);
@@ -138,7 +170,7 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     return [...m.entries()].sort((a, b) => projName(a[0]).localeCompare(projName(b[0])));
   }, [rows, view, projOverride]);
 
-  function patch(id: string, fn: (t: Task) => Task) { setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
+  function patch(id: string, fn: (t: Task) => Task) { lastEditRef.current = Date.now(); setTasks((ts) => ts.map((t) => (t.id === id ? fn(t) : t))); }
   function changeStatus(t: Task, status: string) {
     patch(t.id, (x) => ({ ...x, status }));
     if (persists) start(() => { setStatus(t.id, status); });
@@ -178,10 +210,11 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
     setDeps((d) => d.filter((x) => !(x.task_id === t.id && x.blocks_on === blocksOn)));
     if (persists) start(() => { removeDep(t.id, blocksOn); });
   }
-  function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: viewer, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, viewer, text); }); }
+  function post(type: "task" | "project", id: string, body: string) { const text = body.trim(); if (!text) return; lastEditRef.current = Date.now(); const c: Comment = { id: "tmp" + Math.random().toString(36).slice(2), target_type: type, target_id: id, author: viewer, body: text, created_at: new Date().toISOString().slice(0, 19), mentions: parseMentions(text) }; setComments((cs) => [...cs, c]); if (persists) start(() => { addComment(type, id, viewer, text); }); }
   function renameProj(id: string, name: string) { const n = name.trim(); if (!n) return; setProjOverride((o) => ({ ...o, [id]: n })); if (persists) start(() => { renameProject(id, n); }); }
   function retitle(t: Task, title: string) { const n = title.trim(); if (!n) return; patch(t.id, (x) => ({ ...x, title: n })); if (persists) start(() => { updateTaskTitle(t.id, n); }); }
   function createTaskRaw(title: string, proj: string, whoName: string) {
+    lastEditRef.current = Date.now();
     const id = "tmp" + Math.random().toString(36).slice(2);
     setTasks((ts) => [{ id, project_id: proj, title, status: "todo", priority: "normal", due: "", source_type: "manual", source_title: proj === ONEOFF_ID ? "One-off" : "", source_date: "", source_url: "", description: "", repeat: "", updated_at: new Date().toISOString().slice(0, 10), assignees: whoName ? [whoName] : [] }, ...ts]);
     if (persists) start(() => { addTask(title, proj, whoName ? [idByName.get(whoName) || ""] : []); });
@@ -247,6 +280,8 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
               <button key={v} className={`tab ${view === v ? "on" : ""}`} onClick={() => goView(v)}>{TABLABEL[v]}</button>
             ))}
           </nav>
+          <span className="spacer" />
+          {updatesReady && <button className="updates-pill" onClick={() => window.location.reload()}>↻ New updates — refresh</button>}
         </div>
         <main className="content">
         {(view in STUBS) && (
@@ -314,8 +349,34 @@ export default function Workspace({ data, primaryUser, persists }: { data: WS; p
             </div>
             </div>
             <aside className="rail">
-              <div className="rail-card"><div className="rail-h">REMINDERS TODAY</div><div className="empty-rail">🔔 No reminders today</div></div>
-              <div className="rail-card"><div className="rail-h">UPCOMING</div><div className="empty-rail">Nothing upcoming</div></div>
+              {triage.length > 0 && (
+                <div className="rail-card triage-rail" onClick={() => goView("triage")}>
+                  <div className="rail-h">📥 FROM YOUR MEETINGS</div>
+                  <div className="rail-jump">{triage.length} action {triage.length === 1 ? "item" : "items"} to assign →</div>
+                </div>
+              )}
+              <div className="rail-card">
+                <div className="rail-h">DUE &amp; OVERDUE</div>
+                {dueToday.length === 0 ? <div className="empty-rail">✓ Nothing due</div> :
+                  dueToday.slice(0, 8).map((t) => (
+                    <div key={t.id} className="rail-row" onClick={() => setOpenTaskId(t.id)}>
+                      <span className="rail-row-t">{t.title}</span>
+                      <span className={`rail-row-d ${t.due < today ? "overdue" : ""}`}>{t.due < today ? "overdue" : "today"}</span>
+                    </div>
+                  ))}
+                {dueToday.length > 8 && <div className="cal-more" style={{ marginTop: 6 }}>+{dueToday.length - 8} more</div>}
+              </div>
+              <div className="rail-card">
+                <div className="rail-h">UPCOMING · 7 DAYS</div>
+                {upcoming.length === 0 ? <div className="empty-rail">Nothing upcoming</div> :
+                  upcoming.slice(0, 8).map((t) => (
+                    <div key={t.id} className="rail-row" onClick={() => setOpenTaskId(t.id)}>
+                      <span className="rail-row-t">{t.title}</span>
+                      <span className="rail-row-d">{t.due.slice(5)}</span>
+                    </div>
+                  ))}
+                {upcoming.length > 8 && <div className="cal-more" style={{ marginTop: 6 }}>+{upcoming.length - 8} more</div>}
+              </div>
             </aside>
           </div>
         )}
