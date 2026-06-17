@@ -7,7 +7,7 @@ export const maxDuration = 60;
 // Pulls new Otter transcripts from the knowledge-base repo (GitHub API),
 // extracts their "## Action items", AI-routes each to a project/assignee,
 // and queues them as pending triage items for human review.
-const REPO = "JackH424/jacks-pinecrest-brain";
+const REPO = "pinecrestgroup/kb-jack";
 const GH = "https://api.github.com";
 const MAX_FILES_PER_RUN = 8;
 
@@ -46,16 +46,23 @@ export async function GET(req: Request) {
   // All transcript files, sorted; date-prefixed names make lexicographic = chronological.
   const tree = await gh(`/repos/${REPO}/git/trees/main?recursive=1`, token) as { tree: { path: string; type: string }[] };
   const files = tree.tree
-    .filter((n) => n.type === "blob" && /^raw\/transcripts\/\d{4}\/\d{2}\/.+\.md$/.test(n.path))
+    .filter((n) => n.type === "blob" && /^PFO\/raw\/transcripts\/\d{4}\/\d{2}\/.+\.md$/.test(n.path))
     .map((n) => n.path).sort();
 
-  const last = ((await sql`SELECT val FROM _meta WHERE key='triage_last_file'`) as { val: string }[])[0]?.val || "";
+  // Marker key is versioned (_v2) so the KB-repo migration (jacks-pinecrest-brain
+  // -> pinecrestgroup/kb-jack, paths now PFO/raw/...) re-baselines cleanly instead
+  // of inheriting the old marker, which would block every new file.
+  let last = ((await sql`SELECT val FROM _meta WHERE key='triage_last_file_v2'`) as { val: string }[])[0]?.val || "";
   // First run: baseline to the newest existing transcript — only meetings from
-  // now on get triaged (not the 335-file historical backlog).
+  // now on get triaged (not the full historical backlog). Pass ?backfill=N
+  // (manual run) to instead seed the queue from the last N existing meetings.
   if (!last && files.length) {
-    const newest = files[files.length - 1];
-    await sql`INSERT INTO _meta (key,val) VALUES ('triage_last_file', ${newest}) ON CONFLICT (key) DO UPDATE SET val = ${newest}`;
-    return Response.json({ ok: true, initialized: true, baseline: newest });
+    const backfill = Math.min(Math.max(parseInt(new URL(req.url).searchParams.get("backfill") || "0", 10) || 0, 0), 30);
+    const baseIdx = files.length - 1 - backfill;
+    const baseline = baseIdx >= 0 ? files[baseIdx] : "";
+    await sql`INSERT INTO _meta (key,val) VALUES ('triage_last_file_v2', ${baseline}) ON CONFLICT (key) DO UPDATE SET val = ${baseline}`;
+    if (backfill === 0) return Response.json({ ok: true, initialized: true, baseline });
+    last = baseline; // fall through and triage the last N meetings now
   }
   const todo = files.filter((f) => f > last).slice(0, MAX_FILES_PER_RUN);
   if (todo.length === 0) return Response.json({ ok: true, new_files: 0, queued: 0 });
@@ -104,7 +111,7 @@ export async function GET(req: Request) {
         ON CONFLICT (id) DO NOTHING RETURNING id`;
       if ((res as unknown[]).length) queued++;
     }
-    await sql`INSERT INTO _meta (key,val) VALUES ('triage_last_file', ${path})
+    await sql`INSERT INTO _meta (key,val) VALUES ('triage_last_file_v2', ${path})
       ON CONFLICT (key) DO UPDATE SET val = ${path}`;
   }
   return Response.json({ ok: true, new_files: todo.length, queued });

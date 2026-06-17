@@ -153,12 +153,15 @@ Eli's target model (his onboarding assumes starting from scratch):
   OTTER_API_KEY secret (gotcha: set via `gh secret set --body`, NOT PowerShell
   pipe — pipe adds a BOM that breaks the Authorization header). Manual run
   verified green: "No new conversations". Old repo's poll workflow DISABLED.
-- ⬜ REMAINING (next session): (1) Dashboard triage re-point: in
-  app/api/cron/triage/route.ts set REPO=pinecrestgroup/kb-jack and path regex
-  ^PFO\/raw\/transcripts\/...; RESET _meta key 'triage_last_file' (old marker
-  'raw/...' sorts AFTER new 'PFO/...' paths → would block everything); Jack
-  must issue a new GITHUB_TOKEN PAT scoped to pinecrestgroup/kb-jack (org must
-  allow fine-grained PATs; else classic token w/ repo scope) → Vercel env.
+- ⬜ REMAINING (next session): (1) Dashboard triage re-point: ✅ DONE 2026-06-17
+  — app/api/cron/triage/route.ts now REPO=pinecrestgroup/kb-jack, path regex
+  ^PFO\/raw\/transcripts\/..., marker key bumped 'triage_last_file' ->
+  'triage_last_file_v2' (clean re-baseline; avoids old 'raw/...' marker blocking
+  new 'PFO/...' files), and added ?backfill=N to seed the queue from the last N
+  meetings on a manual run. STILL NEEDS Jack: issue a GITHUB_TOKEN PAT with
+  read access to pinecrestgroup/kb-jack (org must allow fine-grained PATs; else
+  classic token w/ repo scope) → add to Vercel env → redeploy. Until then the
+  route returns early ("GITHUB_TOKEN not set") and is harmless.
   (2) Jack repoints Obsidian vault + Hermes/AGENTS references to C:\KB.
   (3) Jack does Eli's "first session" in VS Code at C:\KB (name agent, role).
   (4) Old wikis (618) intentionally NOT migrated — regenerable; Eli's pipeline
@@ -171,18 +174,46 @@ the dashboard feature queue (paused at #13) until every KB criterion below is
 met. Dashboard is background context only right now.
 
 **KB IS "READY" WHEN (acceptance criteria):**
-- [ ] Opening C:\KB in Claude Code boots with Eli's L1 brain from kb-system
-      (not the old interim files).
-- [ ] 337 transcripts present at C:\KB\PFO\raw\transcripts (migrate commit in git log).
-- [ ] Otter poller on pinecrestgroup/kb-jack: a SCHEDULED (not just manual) run is
+- [x] Opening C:\KB in Claude Code boots with Eli's L1 brain from kb-system
+      (not the old interim files). VERIFIED 2026-06-15: boot hook + CLAUDE.md
+      look for ~/kb-system/BOOT.md; the previous session had cloned the mounts
+      to C:\kb-system and C:\pfokb (wrong parent). FIXED by moving them to
+      ~/kb-system and ~/pfokb (= C:\Users\jackh\...). Hook now fires BOOT branch.
+      C:\KB root is clean (only Eli-seeded CLAUDE.md/AGENTS.md pointers, no old
+      interim L1 files). NOTE: Eli renamed the L1 repo kb-system -> piney-brain
+      (old URL redirects); kb-jack's seeded boot wiring still says ~/kb-system,
+      so the local folder is named kb-system to match. Flag this to Eli (below).
+- [x] 337 transcripts present at C:\KB\PFO\raw\transcripts (migrate commit in git log).
+      VERIFIED 2026-06-15: 337 .md files (222 in 2025/, 115 in 2026/), commit 40d43b3.
+- [x] Otter poller on pinecrestgroup/kb-jack: a SCHEDULED (not just manual) run is
       green with "No new conversations" (no re-ingest). `gh run list -R
       pinecrestgroup/kb-jack`. GitHub disables schedules on inactivity — confirm enabled.
-- [ ] Obsidian vault re-pointed to C:\KB (transcripts at PFO/raw/transcripts).
+      VERIFIED 2026-06-15: scheduled runs green through 06-15 09:58Z; latest log
+      "No new conversations" + "No changes to commit". State file ingested_ids=337
+      (matches transcript count). Workflow .github/workflows/otter-poll.yml.
+- [x] Obsidian vault re-pointed to C:\KB (transcripts at PFO/raw/transcripts).
+      DONE 2026-06-15: C:\KB registered as Obsidian vault (Jack confirmed transcripts
+      visible). .obsidian/ added to KB .gitignore so local viewer state isn't synced.
 - [ ] Eli's "first session" done by Jack in VS Code at C:\KB (name agent, role) —
       a JACK-LED conversation, not an automated build step.
-- [ ] Eli told that kb-jack now carries the Otter workflow + _scripts.
+- [ ] Eli told that kb-jack now carries the Otter workflow + _scripts
+      (ALSO flag: kb-jack's seeded boot wiring references ~/kb-system but Eli
+      renamed that repo to piney-brain — kb-jack seed should be reconciled).
 - [ ] (Optional, Eli-dependent) L2 wiki recompiled under Eli's pipeline.
 Only after ALL of the above: dashboard triage re-point + resume queue at #13.
+
+**SESSION 2026-06-15 NOTES (KB-only focus):**
+- Fixed boot: moved L1 + shared mounts C:\kb-system -> ~/kb-system and
+  C:\pfokb -> ~/pfokb (the parent folders the seeded hook/CLAUDE.md require).
+  C:\KB itself unchanged. Boot hook now fires the BOOT branch (verified).
+- Eli renamed L1 repo kb-system -> piney-brain (old URL redirects). kb-jack's
+  seeded boot wiring still says ~/kb-system; kept local folder named kb-system
+  to match the seed. Reconcile-with-Eli item added to the "tell Eli" box.
+- Did NOT add a `cc` PowerShell launcher (out of scope / blocked as persistence).
+  Start the KB session by opening C:\KB in Claude Code directly.
+- C:\KB has one STAGED-but-uncommitted change: .gitignore now ignores .obsidian/
+  (Obsidian = local viewer). First KB-session assistant should commit + push it.
+- REMAINING KB boxes (#5 first session, #6 tell Eli) are Jack actions only.
 
 **Original reconciliation plan (kept for reference):**
 - Existing private KB: `JackH424/jacks-pinecrest-brain` at
