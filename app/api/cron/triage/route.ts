@@ -43,6 +43,7 @@ export async function GET(req: Request) {
   const sql = getSql();
   if (!sql) return Response.json({ ok: false, error: "no database" });
 
+  try {
   // All transcript files, sorted; date-prefixed names make lexicographic = chronological.
   const tree = await gh(`/repos/${REPO}/git/trees/main?recursive=1`, token) as { tree: { path: string; type: string }[] };
   const files = tree.tree
@@ -115,4 +116,9 @@ export async function GET(req: Request) {
       ON CONFLICT (key) DO UPDATE SET val = ${path}`;
   }
   return Response.json({ ok: true, new_files: todo.length, queued });
+  } catch (e) {
+    // Surface the real cause (e.g. GitHub 404 = token lacks access / org approval
+    // pending; 403 = scope/rate limit) instead of a generic 500.
+    return Response.json({ ok: false, error: e instanceof Error ? e.message : String(e) }, { status: 200 });
+  }
 }
